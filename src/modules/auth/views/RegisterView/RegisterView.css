@@ -1,0 +1,32 @@
+.register-view {
+  display: grid;
+  min-height: 100vh;
+  padding-top: 64px;
+  background: #f8fafc;
+  grid-template-columns: minmax(0, 1.5fr) minmax(600px, 1fr);
+}
+
+.register-view__image {
+  min-height: calc(100vh - 64px);
+  background:
+          linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(37, 99, 235, 0.42)),
+          url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1600&q=80')
+          center / cover no-repeat;
+}
+
+.register-view__panel {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 40px 28px;
+}
+
+@media (max-width: 900px) {
+  .register-view {
+    grid-template-columns: 1fr;
+  }
+
+  .register-view__image {
+    min-height: 220px;
+  }
+}

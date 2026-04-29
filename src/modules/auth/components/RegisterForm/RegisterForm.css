@@ -1,0 +1,54 @@
+.register-form {
+  display: grid;
+  gap: 22px;
+  width: min(100%, 520px);
+}
+
+.register-form__header {
+  display: grid;
+  gap: 10px;
+}
+
+.register-form__eyebrow {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.register-form__title {
+  color: #0f172a;
+  font-size: 30px;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.register-form__description {
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.register-form__fields {
+  display: grid;
+  gap: 16px;
+}
+
+.register-form__switch {
+  color: #475569;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.register-form__link {
+  color: #2563eb;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.register-form__link:hover {
+  text-decoration: underline;
+}

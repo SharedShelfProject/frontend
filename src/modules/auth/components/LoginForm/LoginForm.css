@@ -1,0 +1,54 @@
+.login-form {
+  display: grid;
+  gap: 24px;
+  width: min(100%, 520px);
+}
+
+.login-form__header {
+  display: grid;
+  gap: 10px;
+}
+
+.login-form__eyebrow {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.login-form__title {
+  color: #0f172a;
+  font-size: 32px;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.login-form__description {
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.login-form__fields {
+  display: grid;
+  gap: 16px;
+}
+
+.login-form__switch {
+  color: #475569;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.login-form__link {
+  color: #2563eb;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.login-form__link:hover {
+  text-decoration: underline;
+}

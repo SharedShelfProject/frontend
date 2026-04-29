@@ -1,0 +1,42 @@
+.not-found-view {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.14), transparent 40%),
+    radial-gradient(circle at 80% 75%, rgba(14, 165, 233, 0.14), transparent 38%),
+    #f8fafc;
+  padding: 84px 20px 20px;
+}
+
+.not-found-view__content {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 460px);
+  text-align: center;
+}
+
+.not-found-view__code {
+  color: #2563eb;
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+}
+
+.not-found-view__title {
+  color: #0f172a;
+  font-size: 38px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.not-found-view__description {
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.not-found-view__action {
+  margin-top: 8px;
+}
