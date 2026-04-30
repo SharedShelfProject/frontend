@@ -7,6 +7,8 @@ import LoginView from '@/modules/auth/views/LoginView/LoginView.vue';
 import RegisterView from '@/modules/auth/views/RegisterView/RegisterView.vue';
 import NotFoundView from '@/modules/not-found/views/NotFoundView/NotFoundView.vue';
 import { authSessionService } from '@/services/auth-session.service';
+import { PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
+import ProfileView from '@/modules/profile/views/ProfileView.vue';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -39,6 +41,14 @@ export const router = createRouter({
         requiresAuthorization: true,
       },
     },
+    {
+      path: PROFILE_ROUTE_PATH,
+      name: RouteName.Profile,
+      component: ProfileView,
+      meta: {
+        requiresAuthorization: true,
+      },
+    },  
     {
       path: '/:pathMatch(.*)*',
       component: NotFoundView,

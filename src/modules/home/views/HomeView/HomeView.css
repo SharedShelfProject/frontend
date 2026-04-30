@@ -1,5 +1,46 @@
 .home-view {
   min-height: 100vh;
-  background: #f8fafc;
-  padding-top: 64px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 32%),
+    #f8fafc;
+  padding: 104px 24px 48px;
+}
+
+.home-view__shell {
+  display: grid;
+  gap: 28px;
+  width: min(100%, 960px);
+  margin: 0 auto;
+}
+
+.home-view__welcome {
+  display: grid;
+  gap: 10px;
+}
+
+.home-view__eyebrow {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.home-view__title {
+  color: #0f172a;
+  font-size: 40px;
+  line-height: 1.05;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .home-view {
+    padding: 88px 18px 32px;
+  }
+
+  .home-view__title {
+    font-size: 34px;
+  }
+
 }

@@ -17,7 +17,9 @@ async function readResponseData<ResponseInterface>(response: Response): Promise<
 function buildHeaders(requestOptions: ApiRequestOptions): Headers {
   const requestHeaders = new Headers(requestOptions.headers);
 
-  requestHeaders.set('Content-Type', 'application/json');
+  if (!(requestOptions.body instanceof FormData)) {
+    requestHeaders.set('Content-Type', 'application/json');
+  }
 
   if (requestOptions.useAuthorization !== false) {
     const accessToken = authSessionService.getAccessToken();
