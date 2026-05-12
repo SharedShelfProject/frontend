@@ -1,6 +1,6 @@
 .base-error {
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: #fef2f2;
   color: #991b1b;
   font-size: 14px;

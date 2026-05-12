@@ -1,0 +1,160 @@
+**Книги**
+`POST /books`  
+Додає книгу в особисту колекцію поточного користувача.  
+Body: `title`, `author` обов’язкові; опційно `isbn`, `genre`, `publicationYear`, `language`, `description`, `condition`.  
+Response `201`: `BookDto`.
+
+`GET /books/my`  
+Повертає всі книги поточного користувача, новіші першими.  
+Response `200`: `BookDto[]`.
+
+`GET /books/:id`  
+Повертає книгу за UUID.  
+Response `200`: `BookDto`.
+
+`PATCH /books/:id`  
+Оновлює книгу, тільки якщо поточний користувач є власником.  
+Body: будь-які поля з create + опційно `status`.  
+Логіка статусів: `borrowed` і `queued` не можна виставляти вручну; якщо є активна позика, статус не змінюється вручну; якщо є approved-черга, не можна вручну зробити `available`.  
+Response `200`: `BookDto`.
+
+`DELETE /books/:id`  
+Видаляє книгу з особистої колекції, тільки власником.  
+Response `204`.
+
+`BookDto`: `id`, `title`, `author`, `isbn`, `genre`, `publicationYear`, `language`, `description`, `coverUrl`, `condition`, `status`, `ownerId`, `ownerUsername`, `createdAt`.  
+`BookStatus`: `available | queued | borrowed | unavailable`.
+
+**Групи**
+`POST /groups`  
+Створює групу. Автор автоматично стає `owner` з active membership.  
+Body: `name`; опційно `description`, `visibility: open | private`. Default: `private`. Для private генерується `inviteCode`.  
+Response `201`: `GroupDetailDto`.
+
+`GET /groups`  
+Публічний пошук тільки відкритих груп.  
+Query: `query?`, `page?` default `1`, `limit?` default `20`, max `100`.  
+Response `200`: `GroupListDto { items, total, page, limit }`.
+
+`GET /groups/me`  
+Повертає групи, де поточний користувач має active membership.  
+Response `200`: `GroupListDto`.
+
+`GET /groups/:id`  
+Повертає деталі групи. Для private групи доступ тільки active member. `inviteCode` видно лише учаснику.  
+Response `200`: `GroupDetailDto`.
+
+`POST /groups/:id/join`  
+Вступ у відкриту групу. Якщо вже active member — conflict; якщо blocked — forbidden.  
+Body: порожній `{}`.  
+Response `200`: `GroupDetailDto`.
+
+`POST /groups/join/private`  
+Вступ у private групу за інвайтом.  
+Body: `{ inviteCode: string }`, довжина 1-32.  
+Response `200`: `GroupDetailDto`.
+
+`DELETE /groups/:id/leave`  
+Вихід з групи. Owner не може вийти, поки не передасть ownership.  
+Response `204`.
+
+**Учасники груп**
+Усі маршрути нижче: `/groups/:groupId/members`.
+
+`GET /groups/:groupId/members`  
+Список усіх memberships групи. Доступ тільки active member.  
+Response `200`: `MembershipDto[]`.
+
+`PATCH /groups/:groupId/members/:userId/role`  
+Змінює роль учасника. Owner/admin only. Owner-роль змінити не можна; admin не може підвищувати інших до admin.  
+Body: `{ role: "admin" | "member" }`.  
+Response `200`: `MembershipDto`.
+
+`DELETE /groups/:groupId/members/:userId`  
+Видаляє учасника. Owner/admin only. Себе треба видаляти через leave; owner видаляти не можна; admin не може видалити admin.  
+Response `204`.
+
+`POST /groups/:groupId/members/:userId/block`  
+Блокує учасника. Owner/admin only. Не можна заблокувати себе, owner, а admin не може заблокувати admin.  
+Response `200`: `MembershipDto`.
+
+`POST /groups/:groupId/members/:userId/unblock`  
+Розблоковує blocked membership. Owner/admin only.  
+Response `200`: `MembershipDto`.
+
+`POST /groups/:groupId/members/transfer-ownership`  
+Передає ownership іншому active member. Тільки owner. Поточний owner стає `admin`, новий користувач стає `owner`, `group.owner` оновлюється.  
+Body: `{ newOwnerId: uuid }`.  
+Response `200`: `MembershipDto[]`.
+
+**Каталог групи**
+Усі маршрути нижче: `/groups/:groupId/catalog`, тільки active member.
+
+`GET /groups/:groupId/catalog`  
+Повертає каталог групи, новіші додавання першими.  
+Response `200`: `CatalogEntryDto[]`.
+
+`POST /groups/:groupId/catalog`  
+Додає власну книгу користувача до каталогу групи. Не можна додати чужу книгу або дубль.  
+Body: `{ bookId: uuid }`.  
+Response `201`: `CatalogEntryDto`.
+
+`PATCH /groups/:groupId/catalog/:entryId`  
+Оновлює видимість запису каталогу. Доступ: власник книги або owner/admin групи.  
+Body: `{ isVisible: boolean }`.  
+Response `200`: `CatalogEntryDto`.
+
+`DELETE /groups/:groupId/catalog/:entryId`  
+Видаляє книгу з каталогу. Доступ: власник книги або owner/admin групи.  
+Response `204`.
+
+**Позики і черга**
+`POST /catalog/:entryId/requests`  
+Створює заявку на позику книги з каталогу. Користувач має бути active member групи. Не можна просити власну книгу, hidden entry, unavailable книгу, дублювати active request або просити книгу, яка вже в active/overdue loan у цього користувача.  
+Body: `{ message?: string }`, max 1000.  
+Response `201`: `BorrowRequestDto`.
+
+`GET /catalog/:entryId/requests`  
+Повертає поточну чергу для catalog entry: `approved` перед `pending`; approved сортуються за `queuePosition`, pending — за `requestedAt`.  
+Response `200`: `BorrowRequestDto[]`.
+
+`POST /requests/:requestId/approve`  
+Approve pending-заявки. Доступ: власник книги або owner/admin групи. Перевіряє, що позичальник досі active member.  
+Body: `{ dueAt: ISO date string, notes?: string }`; `dueAt` має бути в майбутньому.  
+Логіка: request стає `approved`, отримує `approvedDueAt`, `approvalNotes`, позицію в approved-черзі. Якщо активної позики по книзі немає і позиція перша — одразу створюється `Loan`, а request стає `fulfilled`. Статус книги синхронізується.  
+Response `201`: `{ request: BorrowRequestDto, loan: LoanDto | null }`.
+
+`POST /requests/:requestId/reject`  
+Відхиляє pending/approved заявку. Доступ: власник книги або owner/admin групи. Скидає `queuePosition`, ставить `resolvedAt`, переіндексовує approved-чергу, синхронізує статус книги.  
+Response `201`: `BorrowRequestDto`.
+
+`POST /requests/:requestId/cancel`  
+Користувач скасовує власну pending/approved заявку.  
+Response `201`: `BorrowRequestDto`.
+
+`GET /loans`  
+Задумано як список позик у групі, response `LoanDto[]`. Але в поточному контролері є проблема контракту: метод читає `@Param('groupId')`, а в URL немає `:groupId`. Для клієнта цей endpoint зараз неоднозначний/зламаний; імовірно мав бути `/groups/:groupId/loans` або мати `groupId` у query.
+
+`POST /loans/:loanId/return`  
+Закриває active/overdue loan. Доступ: borrower, owner книги або owner/admin групи.  
+Body: `{ notes?: string }`, max 1000.  
+Логіка: loan стає `returned`, виставляється `returnedAt`; оновлюється репутація borrower: вчасно `+2`, прострочка до 3 днів `-2`, до 7 `-5`, до 14 `-10`, більше `-20`, межі `0..100`. Після повернення автоматично активується наступна approved-заявка, якщо є.  
+Response `200`: `{ returnedLoan: LoanDto, nextLoan: LoanDto | null }`.
+
+**Відгуки на книги**
+`GET /books/:bookId/reviews`  
+Публічно повертає відгуки книги, новіші першими.  
+Response `200`: `BookReviewDto[]`.
+
+`POST /loans/:loanId/reviews`  
+Створює відгук після завершеної позики. Тільки borrower цієї позики, тільки якщо loan `returned`, тільки один review на loan.  
+Body: `{ rating: number, comment?: string }`, `rating` 1-5, `comment` max 2000.  
+Response `201`: `BookReviewDto`.
+
+`BorrowRequestDto`: `id`, `bookId`, `groupBookId`, `requesterId`, `requesterUsername`, `status`, `queuePosition`, `message`, `approvedDueAt`, `approvalNotes`, `requestedAt`, `resolvedAt`.  
+`BorrowRequestStatus`: `pending | approved | rejected | cancelled | expired | fulfilled`.
+
+`LoanDto`: `id`, `bookId`, `groupId`, `borrowerId`, `borrowerUsername`, `ownerId`, `ownerUsername`, `borrowedAt`, `dueAt`, `returnedAt`, `status`, `notes`.  
+`LoanStatus`: `active | returned | overdue | lost`.
+
+`BookReviewDto`: `id`, `bookId`, `loanId`, `authorId`, `authorUsername`, `rating`, `comment`, `createdAt`.

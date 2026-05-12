@@ -4,18 +4,18 @@
 }
 
 .base-input__label {
-  color: #334155;
+  color: var(--color-text);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .base-input__field {
   width: 100%;
   min-height: 48px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #0f172a;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   padding: 0 14px;
   outline: none;
@@ -23,21 +23,21 @@
 }
 
 .base-input__field::placeholder {
-  color: #94a3b8;
+  color: var(--color-subtle);
 }
 
 .base-input__field:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .base-input__field--invalid {
-  border-color: #dc2626;
+  border-color: var(--color-danger);
   background: #fff7f7;
 }
 
 .base-input__error {
-  color: #b91c1c;
+  color: var(--color-danger);
   font-size: 13px;
   line-height: 1.35;
 }

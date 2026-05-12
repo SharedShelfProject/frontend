@@ -2,6 +2,11 @@
   display: grid;
   gap: 22px;
   width: min(100%, 520px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+  padding: 28px;
 }
 
 .register-form__header {
@@ -34,6 +39,10 @@
 .register-form__fields {
   display: grid;
   gap: 16px;
+}
+
+.register-form .base-button {
+  width: 100%;
 }
 
 .register-form__switch {

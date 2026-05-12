@@ -24,6 +24,7 @@ const form = ref({
 const statusMessage = ref('');
 const errorMessage = ref('');
 const avatarLoadFailed = ref(false);
+const sensitiveBioPattern = /(password|passcode|secret|token|api[_\s-]?key|private\s?key|123456|qwerty|парол|пароль|токен)/i;
 
 const displayName = computed(() => {
   if (!user.value) {
@@ -82,6 +83,18 @@ const isFormChanged = computed(() => {
   );
 });
 
+const bioSecurityWarning = computed(() => {
+  if (!form.value.bio.trim()) {
+    return '';
+  }
+
+  if (sensitiveBioPattern.test(form.value.bio)) {
+    return 'Do not store passwords, tokens, API keys, or other sensitive data in your public bio.';
+  }
+
+  return '';
+});
+
 watch(
   user,
   (value) => {
@@ -102,6 +115,11 @@ function getErrorMessage(error: unknown) {
 async function handleSubmit() {
   statusMessage.value = '';
   errorMessage.value = '';
+
+  if (bioSecurityWarning.value) {
+    errorMessage.value = bioSecurityWarning.value;
+    return;
+  }
 
   try {
     await updateProfile({
@@ -249,17 +267,23 @@ async function handleFileChange(event: Event) {
               <textarea
                 v-model="form.bio"
                 class="profile-view__textarea"
+                :class="{ 'profile-view__textarea--warning': bioSecurityWarning }"
+                :aria-invalid="Boolean(bioSecurityWarning)"
+                aria-describedby="profile-bio-help"
                 maxlength="500"
                 name="bio"
                 placeholder="A short note about your reading taste, exchange preferences, or favorite shelves."
                 rows="7"
               ></textarea>
+              <small id="profile-bio-help" :class="{ 'profile-view__bio-warning': bioSecurityWarning }">
+                {{ bioSecurityWarning || 'This may be visible to people you share books with. Never include passwords or private tokens.' }}
+              </small>
             </label>
 
             <div class="profile-view__actions">
               <BaseButton
                 label="Save profile"
-                :disabled="!isFormChanged"
+                :disabled="!isFormChanged || Boolean(bioSecurityWarning)"
                 :is-loading="isSaving"
                 :type="BaseButtonHtmlType.Submit"
               />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { API_BASE_PATH } from '@/constants/api.constants';
-import { HOME_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
+import { GROUPS_ROUTE_PATH, HOME_ROUTE_PATH, MY_BOOKS_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
 import { UserProfile } from '@/modules/profile/interfaces/user-profile.interface';
 import { usersRepository } from '@/modules/profile/repositories/users.repository';
 import { AppHeaderEmits } from '@/shared/interfaces/app-header-emits.interface';
@@ -71,9 +71,16 @@ watch(
 
 <template>
   <header class="app-header">
-    <RouterLink class="app-header__brand" :to="HOME_ROUTE_PATH">Shared Shelf</RouterLink>
+    <RouterLink class="app-header__brand" :to="HOME_ROUTE_PATH">
+      <span class="app-header__brand-full">Shared Shelf</span>
+      <span class="app-header__brand-short">Shelf</span>
+    </RouterLink>
 
     <nav v-if="isAuthorized" class="app-header__nav" aria-label="Account navigation">
+      <RouterLink class="app-header__nav-link" :to="HOME_ROUTE_PATH">Home</RouterLink>
+      <RouterLink class="app-header__nav-link" :to="MY_BOOKS_ROUTE_PATH">Books</RouterLink>
+      <RouterLink class="app-header__nav-link" :to="GROUPS_ROUTE_PATH">Groups</RouterLink>
+
       <RouterLink class="app-header__profile-link" :to="PROFILE_ROUTE_PATH" aria-label="Open profile">
         <span class="app-header__avatar">
           <img

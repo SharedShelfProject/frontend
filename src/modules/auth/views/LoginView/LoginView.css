@@ -2,7 +2,7 @@
   display: grid;
   min-height: 100vh;
   padding-top: 64px;
-  background: #f8fafc;
+  background: var(--color-background);
   grid-template-columns: minmax(0, 1.5fr) minmax(600px, 1fr);
 }
 
@@ -18,7 +18,10 @@
   display: grid;
   align-items: center;
   justify-items: center;
-  padding: 40px 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.96)),
+    var(--color-background);
+  padding: 48px 32px;
 }
 
 @media (max-width: 900px) {

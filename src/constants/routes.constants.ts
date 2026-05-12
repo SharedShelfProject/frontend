@@ -3,3 +3,7 @@ export const REGISTER_ROUTE_PATH = '/register';
 export const HOME_ROUTE_PATH = '/home';
 export const ROOT_ROUTE_PATH = '/';
 export const PROFILE_ROUTE_PATH = '/profile';
+export const MY_BOOKS_ROUTE_PATH = '/books/my';
+export const BOOK_DETAIL_ROUTE_PATH = '/books/:id';
+export const GROUPS_ROUTE_PATH = '/groups';
+export const GROUP_DETAIL_ROUTE_PATH = '/groups/:id';
