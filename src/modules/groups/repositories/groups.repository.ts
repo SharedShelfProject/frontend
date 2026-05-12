@@ -4,6 +4,7 @@ import { CreateGroupPayload } from '../interfaces/create-group-payload.interface
 import { Group } from '../interfaces/group.interface';
 import { GroupList } from '../interfaces/group-list.interface';
 import { GroupsSearchParams } from '../interfaces/groups-search-params.interface';
+import { UpdateGroupPayload } from '../interfaces/update-group-payload.interface';
 
 function createSearchParams(params: GroupsSearchParams): string {
   const searchParams = new URLSearchParams();
@@ -42,6 +43,10 @@ class GroupsRepository extends BaseRepository {
     return this.request<Group>(`/groups/${groupId}`, HttpMethod.Get);
   }
 
+  update(groupId: string, payload: UpdateGroupPayload): Promise<Group> {
+    return this.request<Group>(`/groups/${groupId}`, HttpMethod.Patch, payload);
+  }
+
   joinOpen(groupId: string): Promise<Group> {
     return this.request<Group>(`/groups/${groupId}/join`, HttpMethod.Post, {});
   }
@@ -52,6 +57,10 @@ class GroupsRepository extends BaseRepository {
 
   leave(groupId: string): Promise<void> {
     return this.request<void>(`/groups/${groupId}/leave`, HttpMethod.Delete);
+  }
+
+  delete(groupId: string): Promise<void> {
+    return this.request<void>(`/groups/${groupId}`, HttpMethod.Delete);
   }
 }
 

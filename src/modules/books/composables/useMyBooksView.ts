@@ -4,6 +4,7 @@ import { BookFormState } from '../interfaces/book-form-state.interface';
 import { CreateBookPayload } from '../interfaces/create-book-payload.interface';
 import { UpdateBookPayload } from '../interfaces/update-book-payload.interface';
 import { booksRepository } from '../repositories/books.repository';
+import { removeBookCover } from '../services/book-cover.service';
 
 const EMPTY_BOOK_FORM: BookFormState = {
   title: '',
@@ -134,6 +135,7 @@ export function useMyBooksView() {
 
     try {
       await booksRepository.delete(book.id);
+      removeBookCover(book.id);
       statusMessage.value = `"${book.title}" was removed.`;
 
       if (editingBookId.value === book.id) {

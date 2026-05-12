@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BaseButton from '@/shared/components/BaseButton/BaseButton.vue';
 import BaseError from '@/shared/components/BaseError/BaseError.vue';
@@ -11,6 +11,7 @@ import { BorrowRequest } from '../../interfaces/borrow-request.interface';
 import { CatalogEntry } from '../../interfaces/catalog-entry.interface';
 import { Membership } from '../../interfaces/membership.interface';
 import { useGroupDetailView } from '../../composables/useGroupDetailView';
+import { groupsRepository } from '../../repositories/groups.repository';
 import './GroupDetailView.css';
 
 const route = useRoute();
@@ -66,6 +67,16 @@ const {
   transferOwnership,
   leaveGroup,
 } = useGroupDetailView(groupId);
+
+const isEditingGroupDetails = ref(false);
+const isUpdatingGroupDetails = ref(false);
+const groupDetailsError = ref('');
+const groupDetailsStatus = ref('');
+const groupDetailsForm = ref({
+  name: '',
+  description: '',
+  visibility: 'private' as 'open' | 'private',
+});
 
 const catalogCountLabel = computed(() => {
   const count = catalog.value.length;
@@ -127,6 +138,60 @@ function formatRole(role: string) {
 
 function formatVisibility() {
   return group.value?.visibility === 'open' ? 'Open' : 'Private';
+}
+
+const canEditCurrentGroup = computed(() => Boolean(
+  group.value &&
+  currentUser.value &&
+  (group.value.ownerId === currentUser.value.id || group.value.ownerUsername === currentUser.value.username),
+));
+const canLeaveCurrentGroup = computed(() => Boolean(group.value?.ownerId && currentUser.value?.id !== group.value.ownerId));
+
+function startEditingGroupDetails() {
+  if (!group.value) {
+    return;
+  }
+
+  groupDetailsError.value = '';
+  groupDetailsStatus.value = '';
+  isEditingGroupDetails.value = true;
+  groupDetailsForm.value = {
+    name: group.value.name,
+    description: group.value.description ?? '',
+    visibility: group.value.visibility,
+  };
+}
+
+function cancelEditingGroupDetails() {
+  isEditingGroupDetails.value = false;
+  groupDetailsError.value = '';
+  groupDetailsStatus.value = '';
+}
+
+async function updateGroupDetails() {
+  if (!group.value || !groupDetailsForm.value.name.trim()) {
+    return;
+  }
+
+  isUpdatingGroupDetails.value = true;
+  groupDetailsError.value = '';
+  groupDetailsStatus.value = '';
+
+  try {
+    const updatedGroup = await groupsRepository.update(group.value.id, {
+      name: groupDetailsForm.value.name.trim(),
+      description: groupDetailsForm.value.description.trim(),
+      visibility: groupDetailsForm.value.visibility,
+    });
+
+    group.value = updatedGroup;
+    groupDetailsStatus.value = 'Group updated.';
+    isEditingGroupDetails.value = false;
+  } catch (error) {
+    groupDetailsError.value = error instanceof Error ? error.message : 'Could not update group.';
+  } finally {
+    isUpdatingGroupDetails.value = false;
+  }
 }
 
 async function handleLeaveGroup() {
@@ -277,6 +342,13 @@ function handleTransferOwnership(event: Event) {
               {{ formatVisibility() }}
             </span>
             <BaseButton
+              v-if="canEditCurrentGroup"
+              label="Edit group"
+              :variant="BaseButtonVariant.Secondary"
+              @click="startEditingGroupDetails"
+            />
+            <BaseButton
+              v-if="canLeaveCurrentGroup"
               label="Leave group"
               :is-loading="isLeaving"
               :variant="BaseButtonVariant.Secondary"
@@ -286,7 +358,53 @@ function handleTransferOwnership(event: Event) {
         </section>
 
         <BaseError :message="errorMessage" />
+        <BaseError :message="groupDetailsError" />
         <p v-if="statusMessage" class="group-detail-view__success" role="status">{{ statusMessage }}</p>
+        <p v-if="groupDetailsStatus" class="group-detail-view__success" role="status">{{ groupDetailsStatus }}</p>
+
+        <section v-if="isEditingGroupDetails" class="group-detail-view__panel group-detail-view__edit-panel" aria-label="Edit group details">
+          <div class="group-detail-view__panel-header">
+            <div>
+              <h2>Edit group</h2>
+              <p>Only the owner can update group details.</p>
+            </div>
+          </div>
+
+          <form class="group-detail-view__edit-form" novalidate @submit.prevent="updateGroupDetails">
+            <label class="group-detail-view__field">
+              <span>Name</span>
+              <input v-model="groupDetailsForm.name" name="groupName" maxlength="150" />
+            </label>
+
+            <label class="group-detail-view__field">
+              <span>Description</span>
+              <textarea v-model="groupDetailsForm.description" maxlength="1000" name="groupDescription" rows="4"></textarea>
+            </label>
+
+            <label class="group-detail-view__field">
+              <span>Visibility</span>
+              <select v-model="groupDetailsForm.visibility" name="groupVisibility">
+                <option value="private">Private</option>
+                <option value="open">Open</option>
+              </select>
+            </label>
+
+            <div class="group-detail-view__edit-actions">
+              <BaseButton
+                label="Save changes"
+                :disabled="!groupDetailsForm.name.trim()"
+                :is-loading="isUpdatingGroupDetails"
+                :type="BaseButtonHtmlType.Submit"
+              />
+              <BaseButton
+                label="Cancel"
+                :disabled="isUpdatingGroupDetails"
+                :variant="BaseButtonVariant.Secondary"
+                @click="cancelEditingGroupDetails"
+              />
+            </div>
+          </form>
+        </section>
 
         <section v-if="group.inviteCode" class="group-detail-view__invite" aria-label="Invite code">
           <span>Invite code</span>

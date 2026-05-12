@@ -19,13 +19,13 @@ export function useBookDetailView(bookId: string) {
     errorMessage.value = '';
 
     try {
-      const [bookResponse, reviewsResponse] = await Promise.all([
-        booksRepository.getById(bookId),
-        bookReviewsRepository.getByBookId(bookId),
-      ]);
+      book.value = await booksRepository.getById(bookId);
 
-      book.value = bookResponse;
-      reviews.value = reviewsResponse;
+      try {
+        reviews.value = await bookReviewsRepository.getByBookId(bookId);
+      } catch {
+        reviews.value = [];
+      }
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not load book.');
     } finally {

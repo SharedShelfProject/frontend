@@ -6,6 +6,7 @@ import BaseInput from '@/shared/components/BaseInput/BaseInput.vue';
 import { API_BASE_PATH } from '@/constants/api.constants';
 import { BaseButtonHtmlType } from '@/shared/enums/base-button-html-type.enum';
 import { BaseButtonVariant } from '@/shared/enums/base-button-variant.enum';
+import { currentLocale, t } from '@/services/localization.service';
 import { useProfileView } from '../composables/useProfileView';
 import { useEditProfile } from '../composables/useEditProfile';
 import './ProfileView.css';
@@ -24,6 +25,7 @@ const form = ref({
 const statusMessage = ref('');
 const errorMessage = ref('');
 const avatarLoadFailed = ref(false);
+const avatarRefreshKey = ref(Date.now());
 const sensitiveBioPattern = /(password|passcode|secret|token|api[_\s-]?key|private\s?key|123456|qwerty|парол|пароль|токен)/i;
 
 const displayName = computed(() => {
@@ -52,19 +54,19 @@ const resolvedAvatarUrl = computed(() => {
     return '';
   }
 
-  if (/^https?:\/\//i.test(user.value.avatarUrl)) {
-    return user.value.avatarUrl;
-  }
+  const baseUrl = /^https?:\/\//i.test(user.value.avatarUrl)
+    ? user.value.avatarUrl
+    : `${API_BASE_PATH}${user.value.avatarUrl.startsWith('/') ? '' : '/'}${user.value.avatarUrl}`;
 
-  return `${API_BASE_PATH}${user.value.avatarUrl.startsWith('/') ? '' : '/'}${user.value.avatarUrl}`;
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${avatarRefreshKey.value}`;
 });
 
 const joinedAt = computed(() => {
   if (!user.value?.createdAt) {
-    return 'Not available';
+    return t('profile.notAvailable');
   }
 
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(currentLocale.value === 'uk' ? 'uk-UA' : 'en', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -89,7 +91,7 @@ const bioSecurityWarning = computed(() => {
   }
 
   if (sensitiveBioPattern.test(form.value.bio)) {
-    return 'Do not store passwords, tokens, API keys, or other sensitive data in your public bio.';
+    return t('profile.bioWarning');
   }
 
   return '';
@@ -109,7 +111,7 @@ watch(
 );
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+  return error instanceof Error ? error.message : t('profile.genericError');
 }
 
 async function handleSubmit() {
@@ -128,7 +130,8 @@ async function handleSubmit() {
       bio: form.value.bio.trim(),
     });
     await fetchProfile();
-    statusMessage.value = 'Profile updated successfully.';
+    window.dispatchEvent(new CustomEvent('shared-shelf:user-updated'));
+    statusMessage.value = t('profile.updated');
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   }
@@ -146,13 +149,13 @@ async function handleFileChange(event: Event) {
   }
 
   if (!file.type.startsWith('image/')) {
-    errorMessage.value = 'Please choose an image file.';
+    errorMessage.value = t('profile.avatarTypeError');
     input.value = '';
     return;
   }
 
   if (file.size > MAX_AVATAR_SIZE_IN_BYTES) {
-    errorMessage.value = 'Avatar must be 5 MB or smaller.';
+    errorMessage.value = t('profile.avatarSizeError');
     input.value = '';
     return;
   }
@@ -160,7 +163,10 @@ async function handleFileChange(event: Event) {
   try {
     await uploadAvatar(file);
     await fetchProfile();
-    statusMessage.value = 'Avatar updated successfully.';
+    avatarRefreshKey.value = Date.now();
+    avatarLoadFailed.value = false;
+    window.dispatchEvent(new CustomEvent('shared-shelf:user-updated'));
+    statusMessage.value = t('profile.avatarUpdated');
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -174,14 +180,14 @@ async function handleFileChange(event: Event) {
     <section class="profile-view__shell">
       <div class="profile-view__header">
         <div>
-          <p class="profile-view__eyebrow">Account settings</p>
-          <h1 class="profile-view__title">Profile</h1>
+          <p class="profile-view__eyebrow">{{ t('profile.account') }}</p>
+          <h1 class="profile-view__title">{{ t('profile.title') }}</h1>
         </div>
       </div>
 
       <div v-if="isLoading" class="profile-view__loading" aria-live="polite">
         <span class="profile-view__spinner" aria-hidden="true"></span>
-        <span>Loading profile...</span>
+        <span>{{ t('profile.loading') }}</span>
       </div>
 
       <div v-else-if="user" class="profile-view__content">
@@ -204,7 +210,7 @@ async function handleFileChange(event: Event) {
             <p class="profile-view__username">@{{ user.username }}</p>
           </div>
 
-          <label class="profile-view__upload">
+          <label class="profile-view__upload" :class="{ 'profile-view__upload--disabled': isUploadingAvatar }">
             <input
               class="profile-view__upload-input"
               type="file"
@@ -212,20 +218,20 @@ async function handleFileChange(event: Event) {
               :disabled="isUploadingAvatar"
               @change="handleFileChange"
             />
-            <span>{{ isUploadingAvatar ? 'Uploading...' : 'Change avatar' }}</span>
+            <span>{{ isUploadingAvatar ? t('profile.uploading') : t('profile.changeAvatar') }}</span>
           </label>
 
           <p v-if="isUploadingAvatar" class="profile-view__upload-note" aria-live="polite">
-            Uploading avatar...
+            {{ t('profile.uploadingAvatar') }}
           </p>
 
           <dl class="profile-view__stats">
             <div>
-              <dt>Reputation</dt>
+              <dt>{{ t('profile.reputation') }}</dt>
               <dd>{{ user.reputationScore }}</dd>
             </div>
             <div>
-              <dt>Member since</dt>
+              <dt>{{ t('profile.memberSince') }}</dt>
               <dd>{{ joinedAt }}</dd>
             </div>
           </dl>
@@ -238,7 +244,7 @@ async function handleFileChange(event: Event) {
 
           <dl class="profile-view__meta">
             <div>
-              <dt>Email</dt>
+              <dt>{{ t('profile.email') }}</dt>
               <dd>{{ user.email }}</dd>
             </div>
           </dl>
@@ -248,7 +254,7 @@ async function handleFileChange(event: Event) {
               <BaseInput
                 v-model="form.firstName"
                 autocomplete="given-name"
-                label="First name"
+                :label="t('profile.firstName')"
                 name="firstName"
                 placeholder="Jane"
               />
@@ -256,14 +262,14 @@ async function handleFileChange(event: Event) {
               <BaseInput
                 v-model="form.lastName"
                 autocomplete="family-name"
-                label="Last name"
+                :label="t('profile.lastName')"
                 name="lastName"
                 placeholder="Austen"
               />
             </div>
 
             <label class="profile-view__textarea-field">
-              <span>Bio</span>
+              <span>{{ t('profile.bio') }}</span>
               <textarea
                 v-model="form.bio"
                 class="profile-view__textarea"
@@ -272,23 +278,23 @@ async function handleFileChange(event: Event) {
                 aria-describedby="profile-bio-help"
                 maxlength="500"
                 name="bio"
-                placeholder="A short note about your reading taste, exchange preferences, or favorite shelves."
+                :placeholder="t('profile.bioPlaceholder')"
                 rows="7"
               ></textarea>
               <small id="profile-bio-help" :class="{ 'profile-view__bio-warning': bioSecurityWarning }">
-                {{ bioSecurityWarning || 'This may be visible to people you share books with. Never include passwords or private tokens.' }}
+                {{ bioSecurityWarning || t('profile.bioHelp') }}
               </small>
             </label>
 
             <div class="profile-view__actions">
               <BaseButton
-                label="Save profile"
+                :label="t('profile.save')"
                 :disabled="!isFormChanged || Boolean(bioSecurityWarning)"
                 :is-loading="isSaving"
                 :type="BaseButtonHtmlType.Submit"
               />
               <BaseButton
-                label="Reset changes"
+                :label="t('profile.reset')"
                 :disabled="!isFormChanged || isSaving"
                 :variant="BaseButtonVariant.Secondary"
                 @click="user && (form = { firstName: user.firstName, lastName: user.lastName, bio: user.bio ?? '' })"
@@ -299,8 +305,8 @@ async function handleFileChange(event: Event) {
       </div>
 
       <div v-else class="profile-view__empty" role="status">
-        <h2>Profile is unavailable</h2>
-        <p>We could not load account data right now. Please refresh the page.</p>
+        <h2>{{ t('profile.unavailable') }}</h2>
+        <p>{{ t('profile.unavailableText') }}</p>
       </div>
     </section>
   </main>

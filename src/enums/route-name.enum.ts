@@ -4,7 +4,9 @@ export enum RouteName {
   Home = 'home',
   Profile = 'profile',
   MyBooks = 'my-books',
+  NewBook = 'new-book',
   BookDetail = 'book-detail',
+  EditBook = 'edit-book',
   Groups = 'groups',
   GroupDetail = 'group-detail',
 }

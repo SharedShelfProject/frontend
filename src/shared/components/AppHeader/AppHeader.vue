@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { API_BASE_PATH } from '@/constants/api.constants';
 import { GROUPS_ROUTE_PATH, HOME_ROUTE_PATH, MY_BOOKS_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
 import { UserProfile } from '@/modules/profile/interfaces/user-profile.interface';
@@ -7,6 +7,7 @@ import { usersRepository } from '@/modules/profile/repositories/users.repository
 import { AppHeaderEmits } from '@/shared/interfaces/app-header-emits.interface';
 import { AppHeaderProperties } from '@/shared/interfaces/app-header-properties.interface';
 import { useAppHeader } from '@/shared/composables/useAppHeader';
+import { localeLabel, t, toggleLocale } from '@/services/localization.service';
 import './AppHeader.css';
 
 const props = defineProps<AppHeaderProperties>();
@@ -16,6 +17,7 @@ const { handleLogout } = useAppHeader(emit);
 
 const user = ref<UserProfile | null>(null);
 const avatarLoadFailed = ref(false);
+const avatarRefreshKey = ref(Date.now());
 
 const displayName = computed(() => {
   if (!user.value) {
@@ -43,30 +45,41 @@ const resolvedAvatarUrl = computed(() => {
     return '';
   }
 
-  if (/^https?:\/\//i.test(user.value.avatarUrl)) {
-    return user.value.avatarUrl;
+  const baseUrl = /^https?:\/\//i.test(user.value.avatarUrl)
+    ? user.value.avatarUrl
+    : `${API_BASE_PATH}${user.value.avatarUrl.startsWith('/') ? '' : '/'}${user.value.avatarUrl}`;
+
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${avatarRefreshKey.value}`;
+});
+
+async function fetchHeaderUser() {
+  if (!props.isAuthorized) {
+    user.value = null;
+    return;
   }
 
-  return `${API_BASE_PATH}${user.value.avatarUrl.startsWith('/') ? '' : '/'}${user.value.avatarUrl}`;
-});
+  try {
+    user.value = await usersRepository.getMe();
+    avatarLoadFailed.value = false;
+    avatarRefreshKey.value = Date.now();
+  } catch {
+    user.value = null;
+  }
+}
 
 watch(
   () => props.isAuthorized,
-  async (isAuthorized) => {
-    if (!isAuthorized) {
-      user.value = null;
-      return;
-    }
-
-    try {
-      user.value = await usersRepository.getMe();
-      avatarLoadFailed.value = false;
-    } catch {
-      user.value = null;
-    }
-  },
+  fetchHeaderUser,
   { immediate: true },
 );
+
+onMounted(() => {
+  window.addEventListener('shared-shelf:user-updated', fetchHeaderUser);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('shared-shelf:user-updated', fetchHeaderUser);
+});
 </script>
 
 <template>
@@ -77,11 +90,17 @@ watch(
     </RouterLink>
 
     <nav v-if="isAuthorized" class="app-header__nav" aria-label="Account navigation">
-      <RouterLink class="app-header__nav-link" :to="HOME_ROUTE_PATH">Home</RouterLink>
-      <RouterLink class="app-header__nav-link" :to="MY_BOOKS_ROUTE_PATH">Books</RouterLink>
-      <RouterLink class="app-header__nav-link" :to="GROUPS_ROUTE_PATH">Groups</RouterLink>
+      <RouterLink class="app-header__nav-link" :to="HOME_ROUTE_PATH">{{ t('nav.home') }}</RouterLink>
+      <RouterLink class="app-header__nav-link" :to="MY_BOOKS_ROUTE_PATH">{{ t('nav.books') }}</RouterLink>
+      <RouterLink class="app-header__nav-link" :to="GROUPS_ROUTE_PATH">{{ t('nav.groups') }}</RouterLink>
 
-      <RouterLink class="app-header__profile-link" :to="PROFILE_ROUTE_PATH" aria-label="Open profile">
+      <div class="app-header__controls" aria-label="Display preferences">
+        <button class="app-header__control-button" type="button" :aria-label="t('nav.switchLanguage')" @click="toggleLocale">
+          {{ localeLabel }}
+        </button>
+      </div>
+
+      <RouterLink class="app-header__profile-link" :to="PROFILE_ROUTE_PATH" :aria-label="t('nav.openProfile')">
         <span class="app-header__avatar">
           <img
             v-if="resolvedAvatarUrl && !avatarLoadFailed"
@@ -94,7 +113,7 @@ watch(
         <span v-if="displayName" class="app-header__profile-name">{{ displayName }}</span>
       </RouterLink>
 
-      <button class="app-header__logout-button" aria-label="Log out" title="Log out" @click="handleLogout">
+      <button class="app-header__logout-button" :aria-label="t('nav.logout')" :title="t('nav.logout')" @click="handleLogout">
         <svg class="app-header__logout-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M10 17l1.4-1.4L8.8 13H21v-2H8.8l2.6-2.6L10 7l-5 5 5 5z"></path>
           <path d="M3 21h8v-2H5V5h6V3H3v18z"></path>

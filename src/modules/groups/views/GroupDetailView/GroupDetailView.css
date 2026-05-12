@@ -212,10 +212,31 @@
 }
 
 .group-detail-view__add-form,
+.group-detail-view__edit-form,
 .group-detail-view__catalog-list,
 .group-detail-view__members-list {
   display: grid;
   gap: 14px;
+}
+
+.group-detail-view__edit-panel {
+  gap: 16px;
+}
+
+.group-detail-view__edit-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.group-detail-view__edit-form .group-detail-view__field:nth-child(2),
+.group-detail-view__edit-actions {
+  grid-column: 1 / -1;
+}
+
+.group-detail-view__edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .group-detail-view__field {

@@ -1,0 +1,293 @@
+.book-editor-view {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eef6f3 0%, var(--color-background) 34%);
+  padding: 96px 24px 56px;
+}
+
+.book-editor-view__shell {
+  display: grid;
+  gap: 20px;
+  width: min(100%, 1040px);
+  margin: 0 auto;
+}
+
+.book-editor-view__back-link {
+  width: max-content;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.book-editor-view__hero,
+.book-editor-view__section,
+.book-editor-view__actions,
+.book-editor-view__loading {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
+
+.book-editor-view__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+}
+
+.book-editor-view__eyebrow {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 900;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.book-editor-view__hero h1 {
+  color: var(--color-text);
+  font-size: 38px;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.book-editor-view__hero p,
+.book-editor-view__section p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+
+.book-editor-view__progress {
+  display: grid;
+  min-width: 148px;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 16px;
+}
+
+.book-editor-view__progress strong {
+  font-size: 28px;
+}
+
+.book-editor-view__progress span {
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.book-editor-view__success {
+  border: 1px solid #86efac;
+  border-radius: var(--radius-sm);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-weight: 800;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.book-editor-view__form {
+  display: grid;
+  gap: 18px;
+}
+
+.book-editor-view__section {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  padding: 22px;
+}
+
+.book-editor-view__step {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: 900;
+}
+
+.book-editor-view__section h2 {
+  color: var(--color-text);
+  font-size: 20px;
+  margin: 12px 0 0;
+}
+
+.book-editor-view__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.book-editor-view__basic-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 152px minmax(0, 1fr);
+  align-items: start;
+}
+
+.book-editor-view__basic-layout .book-editor-view__grid {
+  align-content: start;
+  align-items: start;
+}
+
+.book-editor-view__basic-layout .base-input {
+  align-content: start;
+}
+
+.book-editor-view__basic-layout .base-input__field {
+  height: 48px;
+}
+
+.book-editor-view__cover-upload {
+  display: grid;
+  gap: 8px;
+  width: 152px;
+  cursor: pointer;
+}
+
+.book-editor-view__cover-upload > span,
+.book-editor-view__cover-upload small {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.book-editor-view__cover-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.book-editor-view__cover-upload img,
+.book-editor-view__cover-upload strong {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #dbeafe, #ccfbf1);
+  box-shadow: var(--shadow-sm);
+}
+
+.book-editor-view__cover-upload img {
+  object-fit: cover;
+}
+
+.book-editor-view__cover-upload strong {
+  color: #0f172a;
+  font-size: 42px;
+}
+
+.book-editor-view__grid--details {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.book-editor-view__field {
+  display: grid;
+  gap: 8px;
+}
+
+.book-editor-view__field span {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.book-editor-view__field input,
+.book-editor-view__field select,
+.book-editor-view__field textarea {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  outline: none;
+  padding: 0 13px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.book-editor-view__field input,
+.book-editor-view__field select {
+  min-height: 48px;
+}
+
+.book-editor-view__field textarea {
+  min-height: 128px;
+  padding: 13px;
+  resize: vertical;
+}
+
+.book-editor-view__field input:focus,
+.book-editor-view__field select:focus,
+.book-editor-view__field textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.book-editor-view__actions {
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px;
+}
+
+.book-editor-view__cancel {
+  color: var(--color-muted);
+  font-weight: 900;
+  padding: 0 10px;
+  text-decoration: none;
+}
+
+.book-editor-view__loading {
+  color: var(--color-muted);
+  font-weight: 800;
+  padding: 24px;
+}
+
+@media (max-width: 780px) {
+  .book-editor-view {
+    padding: 88px 18px 40px;
+  }
+
+  .book-editor-view__hero,
+  .book-editor-view__section,
+  .book-editor-view__actions {
+    display: grid;
+  }
+
+  .book-editor-view__hero h1 {
+    font-size: 32px;
+  }
+
+  .book-editor-view__section,
+  .book-editor-view__grid,
+  .book-editor-view__basic-layout,
+  .book-editor-view__grid--details {
+    grid-template-columns: 1fr;
+  }
+
+  .book-editor-view__cover-upload {
+    max-width: 220px;
+  }
+
+  .book-editor-view__actions {
+    position: static;
+    justify-items: stretch;
+  }
+}

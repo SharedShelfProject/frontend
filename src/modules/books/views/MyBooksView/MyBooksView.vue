@@ -1,32 +1,29 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import BaseButton from '@/shared/components/BaseButton/BaseButton.vue';
 import BaseError from '@/shared/components/BaseError/BaseError.vue';
-import BaseInput from '@/shared/components/BaseInput/BaseInput.vue';
 import { RouteName } from '@/enums/route-name.enum';
-import { BaseButtonHtmlType } from '@/shared/enums/base-button-html-type.enum';
 import { BaseButtonVariant } from '@/shared/enums/base-button-variant.enum';
-import { BOOK_LANGUAGE_OPTIONS } from '../../constants/book-languages.constants';
+import { t } from '@/services/localization.service';
 import { Book } from '../../interfaces/book.interface';
 import { useMyBooksView } from '../../composables/useMyBooksView';
+import { getBookCoverUrl } from '../../services/book-cover.service';
 import './MyBooksView.css';
 
 const {
   books,
-  form,
-  editingBookId,
-  isEditing,
   isLoading,
-  isSaving,
   deletingBookId,
   errorMessage,
   statusMessage,
   fetchBooks,
-  resetForm,
-  startEditing,
-  saveBook,
   deleteBook,
 } = useMyBooksView();
+
+const searchQuery = ref('');
+const statusFilter = ref('all');
+const sortMode = ref('newest');
+const viewMode = ref<'grid' | 'list'>('grid');
 
 const bookCountLabel = computed(() => {
   const count = books.value.length;
@@ -34,7 +31,33 @@ const bookCountLabel = computed(() => {
   return `${count} ${count === 1 ? 'book' : 'books'}`;
 });
 
-const canChooseStatus = computed(() => form.value.status === 'available' || form.value.status === 'unavailable');
+const filteredBooks = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+
+  return [...books.value]
+    .filter((book) => {
+      const matchesQuery = !query || [book.title, book.author, book.genre, book.language]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+      const matchesStatus = statusFilter.value === 'all' || book.status === statusFilter.value;
+
+      return matchesQuery && matchesStatus;
+    })
+    .sort((firstBook, secondBook) => {
+      if (sortMode.value === 'title') {
+        return firstBook.title.localeCompare(secondBook.title);
+      }
+
+      if (sortMode.value === 'author') {
+        return firstBook.author.localeCompare(secondBook.author);
+      }
+
+      return new Date(secondBook.createdAt).getTime() - new Date(firstBook.createdAt).getTime();
+    });
+});
+
+const availableCount = computed(() => books.value.filter((book) => book.status === 'available').length);
+const sharedReadyCount = computed(() => books.value.filter((book) => book.status !== 'borrowed').length);
 
 onMounted(fetchBooks);
 
@@ -55,6 +78,7 @@ function handleDelete(book: Book) {
     void deleteBook(book);
   }
 }
+
 </script>
 
 <template>
@@ -62,133 +86,78 @@ function handleDelete(book: Book) {
     <section class="my-books-view__shell">
       <div class="my-books-view__header">
         <div>
-          <p class="my-books-view__eyebrow">Personal collection</p>
-          <h1 class="my-books-view__title">My books</h1>
+          <p class="my-books-view__eyebrow">{{ t('books.eyebrow') }}</p>
+          <h1 class="my-books-view__title">{{ t('books.title') }}</h1>
         </div>
-        <p class="my-books-view__count">{{ bookCountLabel }}</p>
+        <div class="my-books-view__header-actions">
+          <p class="my-books-view__count">{{ bookCountLabel }}</p>
+          <BaseButton :label="t('books.addBook')" @click="$router.push({ name: RouteName.NewBook })" />
+        </div>
       </div>
 
       <BaseError :message="errorMessage" />
       <p v-if="statusMessage" class="my-books-view__success" role="status">{{ statusMessage }}</p>
 
-      <section class="my-books-view__panel" aria-label="Book editor">
-        <div class="my-books-view__panel-header">
-          <div>
-            <h2>{{ isEditing ? 'Edit book' : 'Add a book' }}</h2>
-            <p>{{ isEditing ? 'Update details in your personal collection.' : 'Start with title and author, then add details if you have them.' }}</p>
-          </div>
+      <section class="my-books-view__insights" aria-label="Library summary">
+        <article>
+          <span>{{ t('books.total') }}</span>
+          <strong>{{ books.length }}</strong>
+        </article>
+        <article>
+          <span>{{ t('home.available') }}</span>
+          <strong>{{ availableCount }}</strong>
+        </article>
+        <article>
+          <span>{{ t('books.ready') }}</span>
+          <strong>{{ sharedReadyCount }}</strong>
+        </article>
+      </section>
+
+      <section class="my-books-view__toolbar" aria-label="Library controls">
+        <label class="my-books-view__search">
+          <span>{{ t('books.search') }}</span>
+          <input v-model="searchQuery" :placeholder="t('books.searchPlaceholder')" type="search" />
+        </label>
+        <label>
+          <span>{{ t('books.status') }}</span>
+          <select v-model="statusFilter">
+            <option value="all">{{ t('books.all') }}</option>
+            <option value="available">Available</option>
+            <option value="queued">Queued</option>
+            <option value="borrowed">Borrowed</option>
+            <option value="unavailable">Unavailable</option>
+          </select>
+        </label>
+        <label>
+          <span>{{ t('books.sort') }}</span>
+          <select v-model="sortMode">
+            <option value="newest">{{ t('books.newest') }}</option>
+            <option value="title">{{ t('books.titleSort') }}</option>
+            <option value="author">{{ t('books.authorSort') }}</option>
+          </select>
+        </label>
+        <div class="my-books-view__toggle" aria-label="View mode">
+          <button :class="{ 'is-active': viewMode === 'grid' }" type="button" @click="viewMode = 'grid'">{{ t('books.grid') }}</button>
+          <button :class="{ 'is-active': viewMode === 'list' }" type="button" @click="viewMode = 'list'">{{ t('books.list') }}</button>
         </div>
-
-        <form class="my-books-view__form" novalidate @submit.prevent="saveBook">
-          <div class="my-books-view__form-section">
-            <span>Core information</span>
-            <div class="my-books-view__form-grid">
-              <BaseInput
-                v-model="form.title"
-                autocomplete="off"
-                label="Title"
-                name="title"
-                placeholder="The Left Hand of Darkness"
-              />
-              <BaseInput
-                v-model="form.author"
-                autocomplete="off"
-                label="Author"
-                name="author"
-                placeholder="Ursula K. Le Guin"
-              />
-            </div>
-          </div>
-
-          <div class="my-books-view__form-section">
-            <span>Book details</span>
-            <div class="my-books-view__form-grid my-books-view__form-grid--details">
-              <BaseInput v-model="form.genre" autocomplete="off" label="Genre" name="genre" placeholder="Science fiction" />
-              <label class="my-books-view__field">
-                <span>Language</span>
-                <select v-model="form.language" name="language">
-                  <option value="">Not specified</option>
-                  <option v-for="language in BOOK_LANGUAGE_OPTIONS" :key="language" :value="language">
-                    {{ language }}
-                  </option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div class="my-books-view__form-section">
-            <span>Edition and availability</span>
-            <div class="my-books-view__form-grid my-books-view__form-grid--edition">
-              <BaseInput v-model="form.isbn" autocomplete="off" label="ISBN" name="isbn" placeholder="978..." />
-              <BaseInput
-                v-model="form.publicationYear"
-                autocomplete="off"
-                label="Publication year"
-                name="publicationYear"
-                placeholder="1969"
-                type="number"
-              />
-              <label class="my-books-view__field">
-                <span>Condition</span>
-                <input v-model="form.condition" name="condition" placeholder="Good, annotated, hardcover..." />
-              </label>
-              <label v-if="isEditing" class="my-books-view__field">
-                <span>Status</span>
-                <select v-model="form.status" :disabled="!canChooseStatus" name="status">
-                  <option v-if="!canChooseStatus" :value="form.status">{{ formatStatus(form.status) }}</option>
-                  <option value="available">Available</option>
-                  <option value="unavailable">Unavailable</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <label class="my-books-view__textarea-field">
-            <span>Description</span>
-            <textarea
-              v-model="form.description"
-              class="my-books-view__textarea"
-              name="description"
-              placeholder="A short note about this copy, edition, or why someone might enjoy it."
-              rows="5"
-            ></textarea>
-          </label>
-
-          <p v-if="isEditing && !canChooseStatus" class="my-books-view__status-note">
-            This status is controlled by active requests or loans.
-          </p>
-
-          <div class="my-books-view__actions">
-            <BaseButton
-              :label="isEditing ? 'Save changes' : 'Add book'"
-              :disabled="!form.title.trim() || !form.author.trim()"
-              :is-loading="isSaving"
-              :type="BaseButtonHtmlType.Submit"
-            />
-            <BaseButton
-              v-if="isEditing"
-              label="Cancel edit"
-              :disabled="isSaving"
-              :variant="BaseButtonVariant.Secondary"
-              @click="resetForm"
-            />
-          </div>
-        </form>
       </section>
 
       <section class="my-books-view__list-section" aria-label="Your books">
         <div v-if="isLoading" class="my-books-view__loading" aria-live="polite">
           <span class="my-books-view__spinner" aria-hidden="true"></span>
-          <span>Loading books...</span>
+          <span>{{ t('books.loading') }}</span>
         </div>
 
-        <div v-else-if="books.length" class="my-books-view__list">
+        <div v-else-if="filteredBooks.length" class="my-books-view__list" :class="`my-books-view__list--${viewMode}`">
           <article
-            v-for="book in books"
+            v-for="book in filteredBooks"
             :key="book.id"
             class="my-books-view__book"
-            :class="{ 'my-books-view__book--active': editingBookId === book.id }"
           >
+            <RouterLink class="my-books-view__cover" :to="{ name: RouteName.BookDetail, params: { id: book.id } }" :aria-label="`${t('books.open')} ${book.title}`">
+              <img v-if="getBookCoverUrl(book)" :src="getBookCoverUrl(book)" alt="" />
+              <span v-else aria-hidden="true">{{ book.title.at(0)?.toUpperCase() }}</span>
+            </RouterLink>
             <div class="my-books-view__book-main">
               <div>
                 <p class="my-books-view__book-status" :class="`my-books-view__book-status--${book.status}`">
@@ -205,9 +174,9 @@ function handleDelete(book: Book) {
                 <p class="my-books-view__author">{{ book.author }}</p>
               </div>
               <div class="my-books-view__book-actions">
-                <BaseButton label="Edit" :variant="BaseButtonVariant.Secondary" @click="startEditing(book)" />
+                <BaseButton :label="t('books.edit')" :variant="BaseButtonVariant.Secondary" @click="$router.push({ name: RouteName.EditBook, params: { id: book.id } })" />
                 <BaseButton
-                  label="Delete"
+                  :label="t('books.delete')"
                   :disabled="deletingBookId === book.id"
                   :is-loading="deletingBookId === book.id"
                   :variant="BaseButtonVariant.Secondary"
@@ -220,23 +189,23 @@ function handleDelete(book: Book) {
 
             <dl class="my-books-view__meta">
               <div v-if="book.genre">
-                <dt>Genre</dt>
+                <dt>{{ t('books.genre') }}</dt>
                 <dd>{{ book.genre }}</dd>
               </div>
               <div v-if="book.language">
-                <dt>Language</dt>
+                <dt>{{ t('books.language') }}</dt>
                 <dd>{{ book.language }}</dd>
               </div>
               <div v-if="book.publicationYear">
-                <dt>Year</dt>
+                <dt>{{ t('books.year') }}</dt>
                 <dd>{{ book.publicationYear }}</dd>
               </div>
               <div v-if="book.condition">
-                <dt>Condition</dt>
+                <dt>{{ t('books.condition') }}</dt>
                 <dd>{{ book.condition }}</dd>
               </div>
               <div>
-                <dt>Added</dt>
+                <dt>{{ t('books.added') }}</dt>
                 <dd>{{ formatDate(book.createdAt) }}</dd>
               </div>
             </dl>
@@ -244,8 +213,10 @@ function handleDelete(book: Book) {
         </div>
 
         <div v-else class="my-books-view__empty" role="status">
-          <h2>Your collection is empty</h2>
-          <p>Add your first book above. Later, you will be able to share it inside group catalogs.</p>
+          <div class="my-books-view__empty-icon" aria-hidden="true">+</div>
+          <h2>{{ t('books.emptyTitle') }}</h2>
+          <p>{{ t('books.emptyText') }}</p>
+          <BaseButton :label="t('home.addFirstBook')" @click="$router.push({ name: RouteName.NewBook })" />
         </div>
       </section>
     </section>

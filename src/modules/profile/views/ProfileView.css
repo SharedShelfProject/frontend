@@ -126,6 +126,12 @@
   transform: translateY(-1px);
 }
 
+.profile-view__upload--disabled {
+  cursor: wait;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 .profile-view__upload-input {
   position: absolute;
   width: 1px;

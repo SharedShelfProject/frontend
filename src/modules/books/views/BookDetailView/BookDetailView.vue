@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import BaseError from '@/shared/components/BaseError/BaseError.vue';
 import { MY_BOOKS_ROUTE_PATH } from '@/constants/routes.constants';
 import { useBookDetailView } from '../../composables/useBookDetailView';
+import { getBookCoverUrl } from '../../services/book-cover.service';
 import './BookDetailView.css';
 
 const route = useRoute();
@@ -45,6 +46,10 @@ function formatDate(value: string) {
         <BaseError :message="errorMessage" />
 
         <section class="book-detail-view__hero" aria-label="Book details">
+          <div class="book-detail-view__cover" aria-hidden="true">
+            <img v-if="getBookCoverUrl(book)" :src="getBookCoverUrl(book)" alt="" />
+            <span v-else>{{ book.title.at(0)?.toUpperCase() }}</span>
+          </div>
           <div>
             <p class="book-detail-view__eyebrow">Book details</p>
             <h1 class="book-detail-view__title">{{ book.title }}</h1>
