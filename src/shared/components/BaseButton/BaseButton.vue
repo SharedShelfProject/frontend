@@ -4,6 +4,7 @@ import { BaseButtonProperties } from '@/shared/interfaces/base-button-properties
 import { BaseButtonHtmlType } from '@/shared/enums/base-button-html-type.enum';
 import { BaseButtonVariant } from '@/shared/enums/base-button-variant.enum';
 import { useBaseButton } from '@/shared/composables/useBaseButton';
+import { t } from '@/services/localization.service';
 import './BaseButton.css';
 
 withDefaults(defineProps<BaseButtonProperties>(), {
@@ -26,6 +27,6 @@ const { handleClick } = useBaseButton(emit);
     @click="handleClick"
   >
     <span v-if="isLoading" class="base-button__loader"></span>
-    <span>{{ isLoading ? 'Loading...' : label }}</span>
+    <span>{{ isLoading ? t('common.loading') : label }}</span>
   </button>
 </template>

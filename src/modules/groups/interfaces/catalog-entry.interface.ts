@@ -5,6 +5,7 @@ export interface CatalogEntry {
   groupId: string;
   bookId: string;
   isVisible: boolean;
+  addedAt?: string | null;
   createdAt?: string;
   book?: Book;
   title?: string;

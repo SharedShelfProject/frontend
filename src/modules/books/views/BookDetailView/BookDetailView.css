@@ -90,7 +90,8 @@
 .book-detail-view__description,
 .book-detail-view__empty p,
 .book-detail-view__review p,
-.book-detail-view__review time {
+.book-detail-view__review time,
+.book-detail-view__review-condition {
   color: #64748b;
 }
 
@@ -213,9 +214,19 @@
 }
 
 .book-detail-view__review p,
+.book-detail-view__review-condition,
 .book-detail-view__review time,
 .book-detail-view__empty p {
   margin: 0;
+}
+
+.book-detail-view__review-condition {
+  border-left: 3px solid #bfdbfe;
+  padding-left: 10px;
+}
+
+.book-detail-view__review-condition strong {
+  color: #0f172a;
 }
 
 .book-detail-view__review time {

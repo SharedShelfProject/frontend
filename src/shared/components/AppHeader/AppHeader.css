@@ -30,6 +30,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .app-header__controls {
@@ -178,7 +179,8 @@
     padding: 0 8px;
   }
 
-  .app-header__nav-link:first-child {
+  .app-header__nav-link:first-child,
+  .app-header__nav-link:nth-child(4) {
     display: none;
   }
 

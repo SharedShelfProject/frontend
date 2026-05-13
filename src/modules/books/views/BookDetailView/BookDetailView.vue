@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import BaseError from '@/shared/components/BaseError/BaseError.vue';
 import { MY_BOOKS_ROUTE_PATH } from '@/constants/routes.constants';
+import { currentLocale, t } from '@/services/localization.service';
 import { useBookDetailView } from '../../composables/useBookDetailView';
 import { getBookCoverUrl } from '../../services/book-cover.service';
 import './BookDetailView.css';
@@ -20,11 +21,11 @@ const reviewCountLabel = computed(() => {
 onMounted(fetchBookPage);
 
 function formatStatus(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return t(`status.${status}` as Parameters<typeof t>[0]);
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(currentLocale.value === 'uk' ? 'uk-UA' : 'en', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -111,6 +112,10 @@ function formatDate(value: string) {
                   <span>{{ review.rating }}/5</span>
                 </div>
                 <p v-if="review.comment">{{ review.comment }}</p>
+                <p v-if="review.returnNotes" class="book-detail-view__review-condition">
+                  <strong>{{ t('groupDetail.returnCondition') }}:</strong>
+                  {{ review.returnNotes }}
+                </p>
                 <time :datetime="review.createdAt">{{ formatDate(review.createdAt) }}</time>
               </article>
             </div>

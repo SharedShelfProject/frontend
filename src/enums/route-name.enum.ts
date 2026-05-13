@@ -9,4 +9,5 @@ export enum RouteName {
   EditBook = 'edit-book',
   Groups = 'groups',
   GroupDetail = 'group-detail',
+  MyLoans = 'my-loans',
 }

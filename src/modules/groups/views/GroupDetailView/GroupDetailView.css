@@ -189,6 +189,7 @@
 }
 
 .group-detail-view__panel--catalog {
+  grid-column: 1 / -1;
   min-width: 0;
 }
 
@@ -217,6 +218,37 @@
 .group-detail-view__members-list {
   display: grid;
   gap: 14px;
+}
+
+.group-detail-view__selected-book {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 10px;
+}
+
+.group-detail-view__selected-book > span {
+  display: grid;
+  width: 42px;
+  height: 52px;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #dbeafe, #ccfbf1);
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.group-detail-view__selected-book strong {
+  color: #0f172a;
+}
+
+.group-detail-view__selected-book p {
+  color: #64748b;
+  margin: 4px 0 0;
 }
 
 .group-detail-view__edit-panel {
@@ -302,8 +334,27 @@
 .group-detail-view__entry {
   display: grid;
   gap: 14px;
+  min-width: 0;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
   padding: 16px;
+}
+
+.group-detail-view__entry-main {
+  align-items: flex-start;
+}
+
+.group-detail-view__entry-main > div:first-child {
+  min-width: 0;
+}
+
+.group-detail-view__entry-actions {
+  flex-shrink: 0;
+}
+
+.group-detail-view__entry h3,
+.group-detail-view__entry-main p,
+.group-detail-view__entry-description {
+  overflow-wrap: anywhere;
 }
 
 .group-detail-view__member {
@@ -369,6 +420,12 @@
   margin: 0;
 }
 
+.group-detail-view__loan-hint {
+  margin-top: 6px !important;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .group-detail-view__requests-header span {
   border-radius: 8px;
   background: #eef2ff;
@@ -401,7 +458,8 @@
 .group-detail-view__request-meta,
 .group-detail-view__request-message,
 .group-detail-view__review-title,
-.group-detail-view__review-comment {
+.group-detail-view__review-comment,
+.group-detail-view__review-condition {
   margin: 0;
 }
 
@@ -418,9 +476,19 @@
 
 .group-detail-view__request-meta,
 .group-detail-view__request-message,
-.group-detail-view__review-comment {
+.group-detail-view__review-comment,
+.group-detail-view__review-condition {
   color: #64748b;
   font-size: 14px;
+}
+
+.group-detail-view__review-condition {
+  border-left: 3px solid #bfdbfe;
+  padding-left: 10px;
+}
+
+.group-detail-view__review-condition strong {
+  color: #0f172a;
 }
 
 .group-detail-view__request-meta {

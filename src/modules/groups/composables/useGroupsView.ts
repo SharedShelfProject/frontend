@@ -191,7 +191,17 @@ export function useGroupsView() {
     statusMessage.value = '';
 
     try {
-      await groupsRepository.leave(group.id);
+      const isCurrentOwner = Boolean(
+        currentUser.value &&
+        (group.ownerId === currentUser.value.id || group.ownerUsername === currentUser.value.username),
+      );
+
+      if (isCurrentOwner && (group.memberCount ?? 0) <= 1) {
+        await groupsRepository.delete(group.id);
+      } else {
+        await groupsRepository.leave(group.id);
+      }
+
       statusMessage.value = t('groups.left').replace('{name}', group.name);
       await fetchMyGroups();
       await searchGroups();

@@ -7,6 +7,7 @@ import { GROUPS_ROUTE_PATH } from '@/constants/routes.constants';
 import { RouteName } from '@/enums/route-name.enum';
 import { BaseButtonHtmlType } from '@/shared/enums/base-button-html-type.enum';
 import { BaseButtonVariant } from '@/shared/enums/base-button-variant.enum';
+import { currentLocale, t } from '@/services/localization.service';
 import { BorrowRequest } from '../../interfaces/borrow-request.interface';
 import { CatalogEntry } from '../../interfaces/catalog-entry.interface';
 import { Membership } from '../../interfaces/membership.interface';
@@ -33,10 +34,10 @@ const {
   reviewForms,
   selectedBookId,
   availableBooksToAdd,
+  currentMembership,
   canManageMembers,
   canTransferOwnership,
   activeTransferCandidates,
-  canManageRequests,
   isLoading,
   isCatalogLoading,
   isMembersLoading,
@@ -81,8 +82,12 @@ const groupDetailsForm = ref({
 const catalogCountLabel = computed(() => {
   const count = catalog.value.length;
 
-  return `${count} ${count === 1 ? 'book' : 'books'}`;
+  return `${count} ${count === 1 ? t('groupDetail.book') : t('groupDetail.books')}`;
 });
+
+const selectedBookToAdd = computed(() =>
+  availableBooksToAdd.value.find((book) => book.id === selectedBookId.value) ?? null,
+);
 
 onMounted(fetchPage);
 
@@ -129,23 +134,26 @@ function getEntryReturnedLoan(entry: CatalogEntry) {
 }
 
 function formatStatus(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return t(`status.${status}` as Parameters<typeof t>[0]);
 }
 
 function formatRole(role: string) {
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  return t(`role.${role}` as Parameters<typeof t>[0]);
 }
 
 function formatVisibility() {
-  return group.value?.visibility === 'open' ? 'Open' : 'Private';
+  return group.value?.visibility === 'open' ? t('groups.open') : t('groups.private');
 }
 
-const canEditCurrentGroup = computed(() => Boolean(
+const isCurrentGroupOwner = computed(() => Boolean(
+  currentMembership.value?.role === 'owner',
+));
+const canEditCurrentGroup = computed(() => isCurrentGroupOwner.value);
+const canLeaveCurrentGroup = computed(() => Boolean(
   group.value &&
   currentUser.value &&
-  (group.value.ownerId === currentUser.value.id || group.value.ownerUsername === currentUser.value.username),
+  (!isCurrentGroupOwner.value || members.value.filter((member) => member.status === 'active').length <= 1),
 ));
-const canLeaveCurrentGroup = computed(() => Boolean(group.value?.ownerId && currentUser.value?.id !== group.value.ownerId));
 
 function startEditingGroupDetails() {
   if (!group.value) {
@@ -185,17 +193,17 @@ async function updateGroupDetails() {
     });
 
     group.value = updatedGroup;
-    groupDetailsStatus.value = 'Group updated.';
+    groupDetailsStatus.value = t('groups.updated').replace('{name}', updatedGroup.name);
     isEditingGroupDetails.value = false;
   } catch (error) {
-    groupDetailsError.value = error instanceof Error ? error.message : 'Could not update group.';
+    groupDetailsError.value = error instanceof Error ? error.message : t('groups.updateError');
   } finally {
     isUpdatingGroupDetails.value = false;
   }
 }
 
 async function handleLeaveGroup() {
-  if (!group.value || !window.confirm(`Leave "${group.value.name}"?`)) {
+  if (!group.value || !window.confirm(t('groups.leaveConfirm').replace('{name}', group.value.name))) {
     return;
   }
 
@@ -208,7 +216,7 @@ async function handleLeaveGroup() {
 }
 
 function handleRemoveEntry(entry: CatalogEntry) {
-  if (window.confirm(`Remove "${getEntryTitle(entry)}" from this catalog?`)) {
+  if (window.confirm(t('groupDetail.removeBookConfirm').replace('{title}', getEntryTitle(entry)))) {
     void removeEntry(entry);
   }
 }
@@ -224,12 +232,17 @@ function canCancelRequest(request: BorrowRequest) {
   );
 }
 
-function canResolveRequest(request: BorrowRequest) {
-  return canManageRequests.value && (request.status === 'pending' || request.status === 'approved');
+function canResolveRequest(request: BorrowRequest, entry: CatalogEntry) {
+  return Boolean(
+    currentUser.value &&
+    getEntryOwnerId(entry) === currentUser.value.id &&
+    request.requesterId !== currentUser.value.id &&
+    request.status === 'pending',
+  );
 }
 
 function formatRequestDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(currentLocale.value === 'uk' ? 'uk-UA' : 'en', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -239,15 +252,13 @@ function formatRequestDate(value: string) {
 function canReturnLoan(entry: CatalogEntry) {
   const loan = getEntryActiveLoan(entry);
 
-  if (!loan || !currentUser.value) {
-    return false;
-  }
+  return Boolean(loan && currentUser.value?.id === loan.borrowerId);
+}
 
-  return (
-    loan.borrowerId === currentUser.value.id ||
-    loan.ownerId === currentUser.value.id ||
-    canManageRequests.value
-  );
+function isCurrentUserLoanOwner(entry: CatalogEntry) {
+  const loan = getEntryActiveLoan(entry);
+
+  return Boolean(loan && currentUser.value?.id === loan.ownerId);
 }
 
 function canReviewReturnedLoan(entry: CatalogEntry) {
@@ -257,7 +268,7 @@ function canReviewReturnedLoan(entry: CatalogEntry) {
 }
 
 function formatDueDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(currentLocale.value === 'uk' ? 'uk-UA' : 'en', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -267,13 +278,13 @@ function formatDueDate(value: string) {
 }
 
 function handleRejectRequest(request: BorrowRequest) {
-  if (window.confirm(`Reject request from ${request.requesterUsername}?`)) {
+  if (window.confirm(t('groupDetail.rejectRequestConfirm').replace('{username}', request.requesterUsername))) {
     void rejectBorrowRequest(request);
   }
 }
 
 function handleCancelRequest(request: BorrowRequest) {
-  if (window.confirm('Cancel this borrow request?')) {
+  if (window.confirm(t('groupDetail.cancelRequestConfirm'))) {
     void cancelBorrowRequest(request);
   }
 }
@@ -291,13 +302,13 @@ function canBlockMember(member: Membership) {
 }
 
 function handleRemoveMember(member: Membership) {
-  if (window.confirm(`Remove ${member.username} from this group?`)) {
+  if (window.confirm(t('groupDetail.removeMemberConfirm').replace('{username}', member.username))) {
     void removeMember(member);
   }
 }
 
 function handleBlockMember(member: Membership) {
-  if (window.confirm(`Block ${member.username}?`)) {
+  if (window.confirm(t('groupDetail.blockMemberConfirm').replace('{username}', member.username))) {
     void blockMember(member);
   }
 }
@@ -311,7 +322,7 @@ function handleTransferOwnership(event: Event) {
     return;
   }
 
-  if (window.confirm(`Transfer ownership to ${member.username}?`)) {
+  if (window.confirm(t('groupDetail.transferConfirm').replace('{username}', member.username))) {
     void transferOwnership(newOwnerId);
   } else {
     select.value = '';
@@ -322,17 +333,17 @@ function handleTransferOwnership(event: Event) {
 <template>
   <main class="group-detail-view">
     <section class="group-detail-view__shell">
-      <RouterLink class="group-detail-view__back-link" :to="GROUPS_ROUTE_PATH">Back to groups</RouterLink>
+      <RouterLink class="group-detail-view__back-link" :to="GROUPS_ROUTE_PATH">{{ t('groupDetail.back') }}</RouterLink>
 
       <div v-if="isLoading" class="group-detail-view__loading" aria-live="polite">
         <span class="group-detail-view__spinner" aria-hidden="true"></span>
-        <span>Loading group...</span>
+        <span>{{ t('groupDetail.loadingGroup') }}</span>
       </div>
 
       <template v-else-if="group">
-        <section class="group-detail-view__hero" aria-label="Group details">
+        <section class="group-detail-view__hero" :aria-label="t('groupDetail.details')">
           <div>
-            <p class="group-detail-view__eyebrow">Group catalog</p>
+            <p class="group-detail-view__eyebrow">{{ t('groupDetail.catalogEyebrow') }}</p>
             <h1 class="group-detail-view__title">{{ group.name }}</h1>
             <p v-if="group.description" class="group-detail-view__description">{{ group.description }}</p>
           </div>
@@ -343,13 +354,13 @@ function handleTransferOwnership(event: Event) {
             </span>
             <BaseButton
               v-if="canEditCurrentGroup"
-              label="Edit group"
+              :label="t('groups.editGroup')"
               :variant="BaseButtonVariant.Secondary"
               @click="startEditingGroupDetails"
             />
             <BaseButton
               v-if="canLeaveCurrentGroup"
-              label="Leave group"
+              :label="t('groups.leave')"
               :is-loading="isLeaving"
               :variant="BaseButtonVariant.Secondary"
               @click="handleLeaveGroup"
@@ -362,42 +373,46 @@ function handleTransferOwnership(event: Event) {
         <p v-if="statusMessage" class="group-detail-view__success" role="status">{{ statusMessage }}</p>
         <p v-if="groupDetailsStatus" class="group-detail-view__success" role="status">{{ groupDetailsStatus }}</p>
 
-        <section v-if="isEditingGroupDetails" class="group-detail-view__panel group-detail-view__edit-panel" aria-label="Edit group details">
+        <section
+          v-if="isEditingGroupDetails"
+          class="group-detail-view__panel group-detail-view__edit-panel"
+          :aria-label="t('groupDetail.editDetails')"
+        >
           <div class="group-detail-view__panel-header">
             <div>
-              <h2>Edit group</h2>
-              <p>Only the owner can update group details.</p>
+              <h2>{{ t('groups.editGroup') }}</h2>
+              <p>{{ t('groupDetail.ownerEditHint') }}</p>
             </div>
           </div>
 
           <form class="group-detail-view__edit-form" novalidate @submit.prevent="updateGroupDetails">
             <label class="group-detail-view__field">
-              <span>Name</span>
+              <span>{{ t('groups.name') }}</span>
               <input v-model="groupDetailsForm.name" name="groupName" maxlength="150" />
             </label>
 
             <label class="group-detail-view__field">
-              <span>Description</span>
+              <span>{{ t('groups.description') }}</span>
               <textarea v-model="groupDetailsForm.description" maxlength="1000" name="groupDescription" rows="4"></textarea>
             </label>
 
             <label class="group-detail-view__field">
-              <span>Visibility</span>
+              <span>{{ t('groups.visibility') }}</span>
               <select v-model="groupDetailsForm.visibility" name="groupVisibility">
-                <option value="private">Private</option>
-                <option value="open">Open</option>
+                <option value="private">{{ t('groups.private') }}</option>
+                <option value="open">{{ t('groups.open') }}</option>
               </select>
             </label>
 
             <div class="group-detail-view__edit-actions">
               <BaseButton
-                label="Save changes"
+                :label="t('groups.save')"
                 :disabled="!groupDetailsForm.name.trim()"
                 :is-loading="isUpdatingGroupDetails"
                 :type="BaseButtonHtmlType.Submit"
               />
               <BaseButton
-                label="Cancel"
+                :label="t('groups.cancelEdit')"
                 :disabled="isUpdatingGroupDetails"
                 :variant="BaseButtonVariant.Secondary"
                 @click="cancelEditingGroupDetails"
@@ -406,33 +421,41 @@ function handleTransferOwnership(event: Event) {
           </form>
         </section>
 
-        <section v-if="group.inviteCode" class="group-detail-view__invite" aria-label="Invite code">
-          <span>Invite code</span>
+        <section v-if="group.inviteCode" class="group-detail-view__invite" :aria-label="t('groups.inviteCode')">
+          <span>{{ t('groups.inviteCode') }}</span>
           <strong>{{ group.inviteCode }}</strong>
         </section>
 
         <section class="group-detail-view__layout">
-          <section class="group-detail-view__panel" aria-label="Add book to catalog">
+          <section class="group-detail-view__panel" :aria-label="t('groupDetail.addBook')">
             <div class="group-detail-view__panel-header">
               <div>
-                <h2>Add your book</h2>
-                <p>Choose one of your books that is not in this catalog yet.</p>
+                <h2>{{ t('groupDetail.addBook') }}</h2>
+                <p>{{ t('groupDetail.addBookText') }}</p>
               </div>
             </div>
 
             <form class="group-detail-view__add-form" novalidate @submit.prevent="addSelectedBook">
               <label class="group-detail-view__field">
-                <span>Book</span>
+                <span>{{ t('groupDetail.bookLabel') }}</span>
                 <select v-model="selectedBookId" name="bookId">
-                  <option value="">Select a book</option>
+                  <option value="">{{ t('groupDetail.selectBook') }}</option>
                   <option v-for="book in availableBooksToAdd" :key="book.id" :value="book.id">
                     {{ book.title }} - {{ book.author }}
                   </option>
                 </select>
               </label>
 
+              <div v-if="selectedBookToAdd" class="group-detail-view__selected-book" aria-live="polite">
+                <span aria-hidden="true">{{ selectedBookToAdd.title.at(0)?.toUpperCase() }}</span>
+                <div>
+                  <strong>{{ selectedBookToAdd.title }}</strong>
+                  <p>{{ selectedBookToAdd.author }}</p>
+                </div>
+              </div>
+
               <BaseButton
-                label="Add to catalog"
+                :label="t('groupDetail.addToCatalog')"
                 :disabled="!selectedBookId"
                 :is-loading="isAddingBook"
                 :type="BaseButtonHtmlType.Submit"
@@ -440,22 +463,22 @@ function handleTransferOwnership(event: Event) {
             </form>
 
             <p v-if="!availableBooksToAdd.length" class="group-detail-view__note">
-              All your books are already in this catalog, or your personal collection is empty.
+              {{ t('groupDetail.noBooksToAdd') }}
             </p>
           </section>
 
-          <section class="group-detail-view__panel" aria-label="Group members">
+          <section class="group-detail-view__panel" :aria-label="t('groupDetail.members')">
             <div class="group-detail-view__panel-header">
               <div>
-                <h2>Members</h2>
-                <p>{{ members.length }} {{ members.length === 1 ? 'member' : 'members' }}</p>
+                <h2>{{ t('groupDetail.members') }}</h2>
+                <p>{{ members.length }} {{ members.length === 1 ? t('groupDetail.member') : t('groupDetail.membersCount') }}</p>
               </div>
             </div>
 
             <label v-if="canTransferOwnership && activeTransferCandidates.length" class="group-detail-view__field">
-              <span>Transfer ownership</span>
+              <span>{{ t('groupDetail.transferOwnership') }}</span>
               <select name="newOwnerId" :disabled="Boolean(updatingMemberId)" @change="handleTransferOwnership">
-                <option value="">Select member</option>
+                <option value="">{{ t('groupDetail.selectMember') }}</option>
                 <option v-for="member in activeTransferCandidates" :key="member.userId" :value="member.userId">
                   {{ member.username }}
                 </option>
@@ -464,7 +487,7 @@ function handleTransferOwnership(event: Event) {
 
             <div v-if="isMembersLoading" class="group-detail-view__loading group-detail-view__loading--inline">
               <span class="group-detail-view__spinner" aria-hidden="true"></span>
-              <span>Loading members...</span>
+              <span>{{ t('groupDetail.loadingMembers') }}</span>
             </div>
 
             <div v-else-if="members.length" class="group-detail-view__members-list">
@@ -494,16 +517,16 @@ function handleTransferOwnership(event: Event) {
                     v-if="canChangeRole(member)"
                     :disabled="updatingMemberId === member.userId"
                     :value="member.role"
-                    aria-label="Change member role"
+                    :aria-label="t('groupDetail.changeMemberRole')"
                     @change="updateMemberRole(member, ($event.target as HTMLSelectElement).value as 'admin' | 'member')"
                   >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
+                    <option value="member">{{ t('role.member') }}</option>
+                    <option value="admin">{{ t('role.admin') }}</option>
                   </select>
 
                   <BaseButton
                     v-if="canBlockMember(member)"
-                    label="Block"
+                    :label="t('groupDetail.block')"
                     :disabled="updatingMemberId === member.userId"
                     :is-loading="updatingMemberId === member.userId"
                     :variant="BaseButtonVariant.Secondary"
@@ -512,7 +535,7 @@ function handleTransferOwnership(event: Event) {
 
                   <BaseButton
                     v-else-if="member.status === 'blocked'"
-                    label="Unblock"
+                    :label="t('groupDetail.unblock')"
                     :disabled="updatingMemberId === member.userId"
                     :is-loading="updatingMemberId === member.userId"
                     :variant="BaseButtonVariant.Secondary"
@@ -521,7 +544,7 @@ function handleTransferOwnership(event: Event) {
 
                   <BaseButton
                     v-if="canRemoveMember(member)"
-                    label="Remove"
+                    :label="t('groupDetail.remove')"
                     :disabled="updatingMemberId === member.userId"
                     :variant="BaseButtonVariant.Secondary"
                     @click="handleRemoveMember(member)"
@@ -531,22 +554,22 @@ function handleTransferOwnership(event: Event) {
             </div>
 
             <div v-else class="group-detail-view__empty group-detail-view__empty--compact" role="status">
-              <h2>No members found</h2>
-              <p>Membership data is not available yet.</p>
+              <h2>{{ t('groupDetail.noMembers') }}</h2>
+              <p>{{ t('groupDetail.noMembersText') }}</p>
             </div>
           </section>
 
-          <section class="group-detail-view__panel group-detail-view__panel--catalog" aria-label="Group catalog">
+          <section class="group-detail-view__panel group-detail-view__panel--catalog" :aria-label="t('groupDetail.catalog')">
             <div class="group-detail-view__catalog-header">
               <div>
-                <h2>Catalog</h2>
+                <h2>{{ t('groupDetail.catalog') }}</h2>
                 <p>{{ catalogCountLabel }}</p>
               </div>
             </div>
 
             <div v-if="isCatalogLoading" class="group-detail-view__loading group-detail-view__loading--inline">
               <span class="group-detail-view__spinner" aria-hidden="true"></span>
-              <span>Loading catalog...</span>
+              <span>{{ t('groupDetail.loadingCatalog') }}</span>
             </div>
 
             <div v-else-if="catalog.length" class="group-detail-view__catalog-list">
@@ -565,7 +588,7 @@ function handleTransferOwnership(event: Event) {
                       >
                         {{ formatStatus(getEntryStatus(entry)) }}
                       </span>
-                      <span v-if="!entry.isVisible" class="group-detail-view__hidden-badge">Hidden</span>
+                      <span v-if="!entry.isVisible" class="group-detail-view__hidden-badge">{{ t('groupDetail.hidden') }}</span>
                     </div>
                     <h3>
                       <RouterLink
@@ -580,14 +603,14 @@ function handleTransferOwnership(event: Event) {
 
                   <div class="group-detail-view__entry-actions">
                     <BaseButton
-                      :label="entry.isVisible ? 'Hide' : 'Show'"
+                      :label="entry.isVisible ? t('groupDetail.hide') : t('groupDetail.show')"
                       :disabled="updatingEntryId === entry.id"
                       :is-loading="updatingEntryId === entry.id"
                       :variant="BaseButtonVariant.Secondary"
                       @click="toggleEntryVisibility(entry)"
                     />
                     <BaseButton
-                      label="Remove"
+                      :label="t('groupDetail.remove')"
                       :disabled="updatingEntryId === entry.id"
                       :variant="BaseButtonVariant.Secondary"
                       @click="handleRemoveEntry(entry)"
@@ -601,26 +624,26 @@ function handleTransferOwnership(event: Event) {
 
                 <dl class="group-detail-view__meta">
                   <div v-if="getEntryMeta(entry).owner">
-                    <dt>Owner</dt>
+                    <dt>{{ t('groupDetail.owner') }}</dt>
                     <dd>{{ getEntryMeta(entry).owner }}</dd>
                   </div>
                   <div v-if="getEntryMeta(entry).genre">
-                    <dt>Genre</dt>
+                    <dt>{{ t('books.genre') }}</dt>
                     <dd>{{ getEntryMeta(entry).genre }}</dd>
                   </div>
                   <div v-if="getEntryMeta(entry).language">
-                    <dt>Language</dt>
+                    <dt>{{ t('books.language') }}</dt>
                     <dd>{{ getEntryMeta(entry).language }}</dd>
                   </div>
                   <div v-if="getEntryMeta(entry).condition">
-                    <dt>Condition</dt>
+                    <dt>{{ t('books.condition') }}</dt>
                     <dd>{{ getEntryMeta(entry).condition }}</dd>
                   </div>
                 </dl>
 
-                <section class="group-detail-view__requests" aria-label="Borrow requests">
+                <section class="group-detail-view__requests" :aria-label="t('groupDetail.borrowRequests')">
                   <div class="group-detail-view__requests-header">
-                    <h4>Queue</h4>
+                    <h4>{{ t('groupDetail.queue') }}</h4>
                     <span>{{ getEntryRequests(entry).length }}</span>
                   </div>
 
@@ -631,17 +654,17 @@ function handleTransferOwnership(event: Event) {
                     @submit.prevent="createBorrowRequest(entry)"
                   >
                     <label class="group-detail-view__field">
-                      <span>Message</span>
+                      <span>{{ t('groupDetail.message') }}</span>
                       <textarea
                         v-model="requestMessages[entry.id]"
                         maxlength="1000"
                         name="message"
-                        placeholder="Optional note for the owner"
+                        :placeholder="t('groupDetail.messagePlaceholder')"
                         rows="3"
                       ></textarea>
                     </label>
                     <BaseButton
-                      label="Request book"
+                      :label="t('groupDetail.requestBook')"
                       :disabled="requestingEntryId === entry.id"
                       :is-loading="requestingEntryId === entry.id"
                       :type="BaseButtonHtmlType.Submit"
@@ -661,13 +684,13 @@ function handleTransferOwnership(event: Event) {
                             <span v-if="request.queuePosition">#{{ request.queuePosition }}</span>
                           </p>
                           <p class="group-detail-view__request-meta">
-                            {{ formatRole(request.status) }} - {{ formatRequestDate(request.requestedAt) }}
+                            {{ formatStatus(request.status) }} - {{ formatRequestDate(request.requestedAt) }}
                           </p>
                         </div>
 
                         <BaseButton
                           v-if="canCancelRequest(request)"
-                          label="Cancel"
+                          :label="t('groupDetail.cancel')"
                           :disabled="updatingRequestId === request.id"
                           :is-loading="updatingRequestId === request.id"
                           :variant="BaseButtonVariant.Secondary"
@@ -678,28 +701,28 @@ function handleTransferOwnership(event: Event) {
                       <p v-if="request.message" class="group-detail-view__request-message">{{ request.message }}</p>
 
                       <form
-                        v-if="canResolveRequest(request)"
+                        v-if="canResolveRequest(request, entry)"
                         class="group-detail-view__approval-form"
                         novalidate
                         @submit.prevent="approveBorrowRequest(request)"
                       >
                         <label class="group-detail-view__field">
-                          <span>Due at</span>
+                          <span>{{ t('groupDetail.dueAt') }}</span>
                           <input v-model="approvalForms[request.id].dueAt" name="dueAt" type="datetime-local" />
                         </label>
                         <label class="group-detail-view__field">
-                          <span>Notes</span>
-                          <input v-model="approvalForms[request.id].notes" name="notes" placeholder="Optional" />
+                          <span>{{ t('groupDetail.notes') }}</span>
+                          <input v-model="approvalForms[request.id].notes" name="notes" :placeholder="t('groupDetail.optional')" />
                         </label>
                         <div class="group-detail-view__approval-actions">
                           <BaseButton
-                            label="Approve"
+                            :label="t('groupDetail.approve')"
                             :disabled="updatingRequestId === request.id"
                             :is-loading="updatingRequestId === request.id"
                             :type="BaseButtonHtmlType.Submit"
                           />
                           <BaseButton
-                            label="Reject"
+                            :label="t('groupDetail.reject')"
                             :disabled="updatingRequestId === request.id"
                             :variant="BaseButtonVariant.Secondary"
                             @click="handleRejectRequest(request)"
@@ -709,15 +732,21 @@ function handleTransferOwnership(event: Event) {
                     </article>
                   </div>
 
-                  <p v-else class="group-detail-view__note">No requests yet.</p>
+                  <p v-else class="group-detail-view__note">{{ t('groupDetail.noRequests') }}</p>
                 </section>
 
-                <section v-if="getEntryActiveLoan(entry)" class="group-detail-view__loan" aria-label="Active loan">
+                <section v-if="getEntryActiveLoan(entry)" class="group-detail-view__loan" :aria-label="t('groupDetail.activeLoan')">
                   <div>
-                    <h4>Active loan</h4>
+                    <h4>{{ t('groupDetail.activeLoan') }}</h4>
                     <p>
-                      {{ getEntryActiveLoan(entry)?.borrowerUsername }} - due
-                      {{ formatDueDate(getEntryActiveLoan(entry)?.dueAt ?? '') }}
+                      {{ t('groupDetail.borrowedBy') }} {{ getEntryActiveLoan(entry)?.borrowerUsername }} -
+                      {{ t('groupDetail.due') }} {{ formatDueDate(getEntryActiveLoan(entry)?.dueAt ?? '') }}
+                    </p>
+                    <p v-if="isCurrentUserLoanOwner(entry)" class="group-detail-view__loan-hint">
+                      {{ t('groupDetail.ownerLoanHint') }}
+                    </p>
+                    <p v-else-if="canReturnLoan(entry)" class="group-detail-view__loan-hint">
+                      {{ t('groupDetail.borrowerLoanHint') }}
                     </p>
                   </div>
 
@@ -728,17 +757,17 @@ function handleTransferOwnership(event: Event) {
                     @submit.prevent="getEntryActiveLoan(entry) && returnLoan(getEntryActiveLoan(entry)!)"
                   >
                     <label class="group-detail-view__field">
-                      <span>Return notes</span>
+                      <span>{{ t('groupDetail.returnNotes') }}</span>
                       <textarea
                         v-model="returnForms[getEntryActiveLoan(entry)!.id]"
                         maxlength="1000"
                         name="returnNotes"
-                        placeholder="Optional condition or handoff note"
+                        :placeholder="t('groupDetail.returnPlaceholder')"
                         rows="3"
                       ></textarea>
                     </label>
                     <BaseButton
-                      label="Return book"
+                      :label="t('groupDetail.returnBook')"
                       :disabled="returningLoanId === getEntryActiveLoan(entry)?.id"
                       :is-loading="returningLoanId === getEntryActiveLoan(entry)?.id"
                       :type="BaseButtonHtmlType.Submit"
@@ -749,16 +778,16 @@ function handleTransferOwnership(event: Event) {
                 <section
                   v-if="canReviewReturnedLoan(entry) && getEntryReturnedLoan(entry)"
                   class="group-detail-view__review-form-section"
-                  aria-label="Review book"
+                  :aria-label="t('groupDetail.reviewThisBook')"
                 >
-                  <h4>Review this book</h4>
+                  <h4>{{ t('groupDetail.reviewThisBook') }}</h4>
                   <form
                     class="group-detail-view__review-form"
                     novalidate
                     @submit.prevent="getEntryReturnedLoan(entry) && createReview(getEntryReturnedLoan(entry)!)"
                   >
                     <label class="group-detail-view__field">
-                      <span>Rating</span>
+                      <span>{{ t('groupDetail.rating') }}</span>
                       <select v-model="reviewForms[getEntryReturnedLoan(entry)!.id].rating" name="rating">
                         <option value="5">5</option>
                         <option value="4">4</option>
@@ -768,17 +797,17 @@ function handleTransferOwnership(event: Event) {
                       </select>
                     </label>
                     <label class="group-detail-view__field">
-                      <span>Comment</span>
+                      <span>{{ t('groupDetail.comment') }}</span>
                       <textarea
                         v-model="reviewForms[getEntryReturnedLoan(entry)!.id].comment"
                         maxlength="2000"
                         name="comment"
-                        placeholder="Optional review"
+                        :placeholder="t('groupDetail.reviewPlaceholder')"
                         rows="3"
                       ></textarea>
                     </label>
                     <BaseButton
-                      label="Publish review"
+                      :label="t('groupDetail.publishReview')"
                       :disabled="reviewingLoanId === getEntryReturnedLoan(entry)?.id"
                       :is-loading="reviewingLoanId === getEntryReturnedLoan(entry)?.id"
                       :type="BaseButtonHtmlType.Submit"
@@ -786,9 +815,9 @@ function handleTransferOwnership(event: Event) {
                   </form>
                 </section>
 
-                <section class="group-detail-view__reviews" aria-label="Book reviews">
+                <section class="group-detail-view__reviews" :aria-label="t('groupDetail.reviews')">
                   <div class="group-detail-view__requests-header">
-                    <h4>Reviews</h4>
+                    <h4>{{ t('groupDetail.reviews') }}</h4>
                     <span>{{ getEntryReviews(entry).length }}</span>
                   </div>
 
@@ -798,25 +827,29 @@ function handleTransferOwnership(event: Event) {
                         {{ review.authorUsername }} - {{ review.rating }}/5
                       </p>
                       <p v-if="review.comment" class="group-detail-view__review-comment">{{ review.comment }}</p>
+                      <p v-if="review.returnNotes" class="group-detail-view__review-condition">
+                        <strong>{{ t('groupDetail.returnCondition') }}:</strong>
+                        {{ review.returnNotes }}
+                      </p>
                     </article>
                   </div>
 
-                  <p v-else class="group-detail-view__note">No reviews yet.</p>
+                  <p v-else class="group-detail-view__note">{{ t('groupDetail.noReviews') }}</p>
                 </section>
               </article>
             </div>
 
             <div v-else class="group-detail-view__empty" role="status">
-              <h2>Catalog is empty</h2>
-              <p>Add a book from your collection to start this group shelf.</p>
+              <h2>{{ t('groupDetail.emptyCatalog') }}</h2>
+              <p>{{ t('groupDetail.emptyCatalogText') }}</p>
             </div>
           </section>
         </section>
       </template>
 
       <div v-else class="group-detail-view__empty" role="status">
-        <h2>Group is unavailable</h2>
-        <p>We could not load this group right now.</p>
+        <h2>{{ t('groupDetail.unavailable') }}</h2>
+        <p>{{ t('groupDetail.unavailableText') }}</p>
       </div>
     </section>
   </main>

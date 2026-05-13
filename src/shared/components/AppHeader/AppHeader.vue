@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { API_BASE_PATH } from '@/constants/api.constants';
-import { GROUPS_ROUTE_PATH, HOME_ROUTE_PATH, MY_BOOKS_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
+import { GROUPS_ROUTE_PATH, HOME_ROUTE_PATH, MY_BOOKS_ROUTE_PATH, MY_LOANS_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
 import { UserProfile } from '@/modules/profile/interfaces/user-profile.interface';
 import { usersRepository } from '@/modules/profile/repositories/users.repository';
+import { resolveAvatarUrl } from '@/modules/profile/services/avatar-url.service';
 import { AppHeaderEmits } from '@/shared/interfaces/app-header-emits.interface';
 import { AppHeaderProperties } from '@/shared/interfaces/app-header-properties.interface';
 import { useAppHeader } from '@/shared/composables/useAppHeader';
@@ -41,15 +41,7 @@ const initials = computed(() => {
 });
 
 const resolvedAvatarUrl = computed(() => {
-  if (!user.value?.avatarUrl) {
-    return '';
-  }
-
-  const baseUrl = /^https?:\/\//i.test(user.value.avatarUrl)
-    ? user.value.avatarUrl
-    : `${API_BASE_PATH}${user.value.avatarUrl.startsWith('/') ? '' : '/'}${user.value.avatarUrl}`;
-
-  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${avatarRefreshKey.value}`;
+  return resolveAvatarUrl(user.value?.avatarUrl, avatarRefreshKey.value);
 });
 
 async function fetchHeaderUser() {
@@ -93,6 +85,7 @@ onBeforeUnmount(() => {
       <RouterLink class="app-header__nav-link" :to="HOME_ROUTE_PATH">{{ t('nav.home') }}</RouterLink>
       <RouterLink class="app-header__nav-link" :to="MY_BOOKS_ROUTE_PATH">{{ t('nav.books') }}</RouterLink>
       <RouterLink class="app-header__nav-link" :to="GROUPS_ROUTE_PATH">{{ t('nav.groups') }}</RouterLink>
+      <RouterLink class="app-header__nav-link" :to="MY_LOANS_ROUTE_PATH">{{ t('nav.loans') }}</RouterLink>
 
       <div class="app-header__controls" aria-label="Display preferences">
         <button class="app-header__control-button" type="button" :aria-label="t('nav.switchLanguage')" @click="toggleLocale">

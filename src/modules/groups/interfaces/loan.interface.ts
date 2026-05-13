@@ -3,6 +3,8 @@ import { LoanStatus } from './loan-status.type';
 export interface Loan {
   id: string;
   bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
   groupId: string;
   borrowerId: string;
   borrowerUsername: string;

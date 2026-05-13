@@ -6,5 +6,6 @@ export interface BookReview {
   authorUsername: string;
   rating: number;
   comment?: string | null;
+  returnNotes?: string | null;
   createdAt: string;
 }

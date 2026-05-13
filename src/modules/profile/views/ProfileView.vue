@@ -3,12 +3,12 @@ import { computed, ref, watch } from 'vue';
 import BaseButton from '@/shared/components/BaseButton/BaseButton.vue';
 import BaseError from '@/shared/components/BaseError/BaseError.vue';
 import BaseInput from '@/shared/components/BaseInput/BaseInput.vue';
-import { API_BASE_PATH } from '@/constants/api.constants';
 import { BaseButtonHtmlType } from '@/shared/enums/base-button-html-type.enum';
 import { BaseButtonVariant } from '@/shared/enums/base-button-variant.enum';
 import { currentLocale, t } from '@/services/localization.service';
 import { useProfileView } from '../composables/useProfileView';
 import { useEditProfile } from '../composables/useEditProfile';
+import { resolveAvatarUrl } from '../services/avatar-url.service';
 import './ProfileView.css';
 
 const MAX_AVATAR_SIZE_IN_BYTES = 5 * 1024 * 1024;
@@ -50,15 +50,7 @@ const initials = computed(() => {
 });
 
 const resolvedAvatarUrl = computed(() => {
-  if (!user.value?.avatarUrl) {
-    return '';
-  }
-
-  const baseUrl = /^https?:\/\//i.test(user.value.avatarUrl)
-    ? user.value.avatarUrl
-    : `${API_BASE_PATH}${user.value.avatarUrl.startsWith('/') ? '' : '/'}${user.value.avatarUrl}`;
-
-  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${avatarRefreshKey.value}`;
+  return resolveAvatarUrl(user.value?.avatarUrl, avatarRefreshKey.value);
 });
 
 const joinedAt = computed(() => {

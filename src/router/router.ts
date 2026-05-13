@@ -7,6 +7,7 @@ import {
   GROUPS_ROUTE_PATH,
   HOME_ROUTE_PATH,
   LOGIN_ROUTE_PATH,
+  MY_LOANS_ROUTE_PATH,
   MY_BOOKS_ROUTE_PATH,
   NEW_BOOK_ROUTE_PATH,
   PROFILE_ROUTE_PATH,
@@ -25,6 +26,7 @@ import BookDetailView from '@/modules/books/views/BookDetailView/BookDetailView.
 import BookEditorView from '@/modules/books/views/BookEditorView/BookEditorView.vue';
 import GroupsView from '@/modules/groups/views/GroupsView/GroupsView.vue';
 import GroupDetailView from '@/modules/groups/views/GroupDetailView/GroupDetailView.vue';
+import MyLoansView from '@/modules/loans/views/MyLoansView/MyLoansView.vue';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -109,6 +111,14 @@ export const router = createRouter({
       path: GROUP_DETAIL_ROUTE_PATH,
       name: RouteName.GroupDetail,
       component: GroupDetailView,
+      meta: {
+        requiresAuthorization: true,
+      },
+    },
+    {
+      path: MY_LOANS_ROUTE_PATH,
+      name: RouteName.MyLoans,
+      component: MyLoansView,
       meta: {
         requiresAuthorization: true,
       },

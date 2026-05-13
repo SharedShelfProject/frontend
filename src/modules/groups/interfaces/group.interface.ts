@@ -8,6 +8,6 @@ export interface Group {
   inviteCode?: string | null;
   ownerId?: string;
   ownerUsername?: string;
-  membersCount?: number;
+  memberCount?: number;
   createdAt?: string;
 }

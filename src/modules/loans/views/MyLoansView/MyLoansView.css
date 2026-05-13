@@ -1,0 +1,329 @@
+.my-loans-view {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f0f7ff 0%, #f8fafc 36%);
+  padding: 104px 24px 48px;
+}
+
+.my-loans-view__shell {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.my-loans-view__header,
+.my-loans-view__loan-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.my-loans-view__header,
+.my-loans-view__loan,
+.my-loans-view__empty,
+.my-loans-view__loading {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-sm);
+}
+
+.my-loans-view__header {
+  padding: 26px;
+}
+
+.my-loans-view__eyebrow {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 900;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.my-loans-view__header h1 {
+  color: var(--color-text);
+  font-size: 40px;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.my-loans-view__header p,
+.my-loans-view__loan-header p,
+.my-loans-view__empty p {
+  color: var(--color-muted);
+  margin: 8px 0 0;
+}
+
+.my-loans-view__summary {
+  display: grid;
+  min-width: 132px;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 16px;
+}
+
+.my-loans-view__summary span {
+  color: #bfdbfe;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.my-loans-view__summary strong {
+  font-size: 30px;
+}
+
+.my-loans-view__success {
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 800;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.my-loans-view__list {
+  display: grid;
+  gap: 14px;
+}
+
+.my-loans-view__loan {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  padding: 18px;
+}
+
+.my-loans-view__loan--review {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: linear-gradient(135deg, #ffffff, #f0fdf4);
+}
+
+.my-loans-view__cover {
+  display: grid;
+  width: 96px;
+  aspect-ratio: 3 / 4;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #dbeafe, #ccfbf1);
+  color: #0f172a;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.my-loans-view__content,
+.my-loans-view__return-form,
+.my-loans-view__return-form label {
+  display: grid;
+  gap: 12px;
+}
+
+.my-loans-view__loan h2 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.my-loans-view__loan h2 a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.my-loans-view__loan h2 a:hover {
+  color: var(--color-primary);
+}
+
+.my-loans-view__status {
+  width: max-content;
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark) !important;
+  font-size: 12px;
+  font-weight: 900;
+  margin: 0 0 8px !important;
+  padding: 5px 8px;
+  text-transform: uppercase;
+}
+
+.my-loans-view__status--returned {
+  background: #dcfce7;
+  color: #166534 !important;
+}
+
+.my-loans-view__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.my-loans-view__meta div {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 9px 11px;
+}
+
+.my-loans-view__meta dt {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.my-loans-view__meta dd {
+  color: var(--color-text);
+  font-weight: 900;
+  margin: 3px 0 0;
+}
+
+.my-loans-view__return-form,
+.my-loans-view__review-form {
+  border-top: 1px solid var(--color-border);
+  padding-top: 14px;
+}
+
+.my-loans-view__return-form span,
+.my-loans-view__review-form span {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.my-loans-view__return-form textarea,
+.my-loans-view__review-form textarea,
+.my-loans-view__review-form select {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  padding: 12px;
+}
+
+.my-loans-view__return-form textarea,
+.my-loans-view__review-form textarea {
+  resize: vertical;
+}
+
+.my-loans-view__review-form select {
+  min-height: 46px;
+}
+
+.my-loans-view__review-form,
+.my-loans-view__review-form label {
+  display: grid;
+  gap: 12px;
+}
+
+.my-loans-view__review-intro {
+  display: grid;
+  gap: 4px;
+}
+
+.my-loans-view__review-intro h3 {
+  color: var(--color-text);
+  font-size: 18px;
+  margin: 0;
+}
+
+.my-loans-view__review-intro p {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.my-loans-view__condition-note {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 12px;
+}
+
+.my-loans-view__condition-note p,
+.my-loans-view__condition-note small {
+  margin: 0;
+}
+
+.my-loans-view__condition-note p {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.my-loans-view__condition-note small {
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.my-loans-view__review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.my-loans-view .base-button--primary,
+.my-loans-view .base-button--primary span {
+  color: #ffffff;
+}
+
+.my-loans-view__empty,
+.my-loans-view__loading {
+  padding: 26px;
+}
+
+.my-loans-view__empty {
+  text-align: center;
+}
+
+.my-loans-view__empty h2 {
+  color: var(--color-text);
+  margin: 0;
+}
+
+.my-loans-view__loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.my-loans-view__spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #dbeafe;
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: my-loans-spin 800ms linear infinite;
+}
+
+@keyframes my-loans-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .my-loans-view {
+    padding: 88px 18px 32px;
+  }
+
+  .my-loans-view__header,
+  .my-loans-view__loan-header {
+    display: grid;
+  }
+
+  .my-loans-view__loan {
+    grid-template-columns: 1fr;
+  }
+
+  .my-loans-view__meta {
+    justify-content: flex-start;
+  }
+}

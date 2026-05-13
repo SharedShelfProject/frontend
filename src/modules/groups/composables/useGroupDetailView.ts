@@ -66,7 +66,7 @@ export function useGroupDetailView(groupId: string) {
 
   const currentRole = computed(() => currentMembership.value?.role ?? null);
 
-  const canManageMembers = computed(() => currentRole.value === 'owner' || currentRole.value === 'admin');
+  const canManageMembers = computed(() => currentRole.value === 'owner');
 
   const canTransferOwnership = computed(() => currentRole.value === 'owner');
 
@@ -74,7 +74,7 @@ export function useGroupDetailView(groupId: string) {
     members.value.filter((member) => member.status === 'active' && member.role !== 'owner'),
   );
 
-  const canManageRequests = computed(() => canManageMembers.value);
+  const canManageRequests = computed(() => currentRole.value === 'owner' || currentRole.value === 'admin');
 
   function setStatus(message: string) {
     statusMessage.value = message;
@@ -90,29 +90,39 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       catalog.value = await groupCatalogRepository.getCatalog(groupId);
-      await Promise.all([fetchRequestQueues(), fetchBookReviews()]);
+      await Promise.allSettled([fetchRequestQueues(), fetchBookReviews()]);
     } finally {
       isCatalogLoading.value = false;
     }
   }
 
   async function fetchBookReviews() {
-    const reviewEntries = await Promise.all(
-      catalog.value.map(async (entry) => [entry.bookId, await bookReviewsRepository.getByBookId(entry.bookId)] as const),
+    const reviewEntries = await Promise.allSettled(
+      catalog.value
+        .filter((entry) => entry.bookId)
+        .map(async (entry) => [entry.bookId, await bookReviewsRepository.getByBookId(entry.bookId)] as const),
     );
 
-    bookReviews.value = Object.fromEntries(reviewEntries);
+    bookReviews.value = Object.fromEntries(
+      reviewEntries
+        .filter((entry): entry is PromiseFulfilledResult<readonly [string, import('../interfaces/book-review.interface').BookReview[]]> => entry.status === 'fulfilled')
+        .map((entry) => entry.value),
+    );
   }
 
   async function fetchRequestQueues() {
-    const queueEntries = await Promise.all(
+    const queueEntries = await Promise.allSettled(
       catalog.value.map(async (entry) => [entry.id, await borrowRequestsRepository.getQueue(entry.id)] as const),
     );
     const nextApprovalForms = { ...approvalForms.value };
 
-    requestQueues.value = Object.fromEntries(queueEntries);
+    const fulfilledQueueEntries = queueEntries
+      .filter((entry): entry is PromiseFulfilledResult<readonly [string, import('../interfaces/borrow-request.interface').BorrowRequest[]]> => entry.status === 'fulfilled')
+      .map((entry) => entry.value);
 
-    queueEntries.forEach(([, requests]) => {
+    requestQueues.value = Object.fromEntries(fulfilledQueueEntries);
+
+    fulfilledQueueEntries.forEach(([, requests]) => {
       requests.forEach((request) => {
         if (!nextApprovalForms[request.id]) {
           nextApprovalForms[request.id] = {
@@ -170,7 +180,7 @@ export function useGroupDetailView(groupId: string) {
       await groupCatalogRepository.addBook(groupId, selectedBookId.value);
       selectedBookId.value = '';
       setStatus('Book added to group catalog.');
-      await fetchCatalog();
+      await Promise.all([fetchCatalog(), fetchMyBooks()]);
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not add book to catalog.');
     } finally {
@@ -319,7 +329,7 @@ export function useGroupDetailView(groupId: string) {
     statusMessage.value = '';
 
     try {
-      await bookReviewsRepository.create(loan.id, rating, form.comment);
+      await bookReviewsRepository.create(loan.id, rating, form.comment?.trim());
       reviewForms.value = {
         ...reviewForms.value,
         [loan.id]: {
@@ -453,6 +463,18 @@ export function useGroupDetailView(groupId: string) {
     statusMessage.value = '';
 
     try {
+      const activeMembersCount = members.value.filter((member) => member.status === 'active').length;
+      const isCurrentOwner = Boolean(
+        group.value &&
+        currentUser.value &&
+        (group.value.ownerId === currentUser.value.id || group.value.ownerUsername === currentUser.value.username),
+      );
+
+      if (isCurrentOwner && activeMembersCount <= 1) {
+        await groupsRepository.delete(groupId);
+        return;
+      }
+
       await groupsRepository.leave(groupId);
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not leave group.');

@@ -9,3 +9,4 @@ export const BOOK_DETAIL_ROUTE_PATH = '/books/:id';
 export const EDIT_BOOK_ROUTE_PATH = '/books/:id/edit';
 export const GROUPS_ROUTE_PATH = '/groups';
 export const GROUP_DETAIL_ROUTE_PATH = '/groups/:id';
+export const MY_LOANS_ROUTE_PATH = '/loans/my';

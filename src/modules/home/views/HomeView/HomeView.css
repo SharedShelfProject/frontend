@@ -257,12 +257,14 @@
 
 .home-view__dashboard-grid {
   display: grid;
+  align-items: start;
   gap: 16px;
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
 }
 
 .home-view__panel {
   display: grid;
+  align-content: start;
   gap: 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -294,6 +296,7 @@
 
 .home-view__recent-books {
   display: grid;
+  align-content: start;
   gap: 10px;
 }
 
@@ -350,6 +353,7 @@
 
 .home-view__group-list {
   display: grid;
+  align-content: start;
   gap: 10px;
 }
 

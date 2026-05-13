@@ -58,6 +58,10 @@ function isGroupOwner(group: Group) {
   );
 }
 
+function canLeaveGroup(group: Group) {
+  return !isGroupOwner(group) || (group.memberCount ?? 0) <= 1;
+}
+
 function handleLeaveGroup(group: Group) {
   if (window.confirm(t('groups.leaveConfirm').replace('{name}', group.name))) {
     void leaveGroup(group);
@@ -141,7 +145,7 @@ function handleGroupFormSubmit() {
                     @click="startEditingGroup(group)"
                   />
                   <BaseButton
-                    v-if="!isGroupOwner(group)"
+                    v-if="canLeaveGroup(group)"
                     :label="t('groups.leave')"
                     :disabled="deletingGroupId === group.id"
                     :is-loading="deletingGroupId === group.id"
