@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { GROUPS_ROUTE_PATH, HOME_ROUTE_PATH, MY_BOOKS_ROUTE_PATH, MY_LOANS_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
+import { GROUPS_ROUTE_PATH, HOME_ROUTE_PATH, MY_BOOKS_ROUTE_PATH, MY_LOANS_ROUTE_PATH, NOTIFICATIONS_ROUTE_PATH, PROFILE_ROUTE_PATH } from '@/constants/routes.constants';
+import { notificationsRepository } from '@/modules/notifications/repositories/notifications.repository';
 import { UserProfile } from '@/modules/profile/interfaces/user-profile.interface';
 import { usersRepository } from '@/modules/profile/repositories/users.repository';
 import { resolveAvatarUrl } from '@/modules/profile/services/avatar-url.service';
@@ -18,6 +19,8 @@ const { handleLogout } = useAppHeader(emit);
 const user = ref<UserProfile | null>(null);
 const avatarLoadFailed = ref(false);
 const avatarRefreshKey = ref(Date.now());
+const unreadNotificationsCount = ref(0);
+let notificationsIntervalId: number | undefined;
 
 const displayName = computed(() => {
   if (!user.value) {
@@ -59,18 +62,55 @@ async function fetchHeaderUser() {
   }
 }
 
+async function fetchUnreadNotificationsCount() {
+  if (!props.isAuthorized) {
+    unreadNotificationsCount.value = 0;
+    return;
+  }
+
+  try {
+    const response = await notificationsRepository.getUnreadCount();
+    unreadNotificationsCount.value = response.count;
+  } catch {
+    unreadNotificationsCount.value = 0;
+  }
+}
+
+function startNotificationsPolling() {
+  if (notificationsIntervalId) {
+    window.clearInterval(notificationsIntervalId);
+  }
+
+  if (!props.isAuthorized) {
+    unreadNotificationsCount.value = 0;
+    return;
+  }
+
+  void fetchUnreadNotificationsCount();
+  notificationsIntervalId = window.setInterval(fetchUnreadNotificationsCount, 60_000);
+}
+
 watch(
   () => props.isAuthorized,
-  fetchHeaderUser,
+  () => {
+    void fetchHeaderUser();
+    startNotificationsPolling();
+  },
   { immediate: true },
 );
 
 onMounted(() => {
   window.addEventListener('shared-shelf:user-updated', fetchHeaderUser);
+  window.addEventListener('shared-shelf:notifications-updated', fetchUnreadNotificationsCount);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('shared-shelf:user-updated', fetchHeaderUser);
+  window.removeEventListener('shared-shelf:notifications-updated', fetchUnreadNotificationsCount);
+
+  if (notificationsIntervalId) {
+    window.clearInterval(notificationsIntervalId);
+  }
 });
 </script>
 
@@ -86,6 +126,13 @@ onBeforeUnmount(() => {
       <RouterLink class="app-header__nav-link" :to="MY_BOOKS_ROUTE_PATH">{{ t('nav.books') }}</RouterLink>
       <RouterLink class="app-header__nav-link" :to="GROUPS_ROUTE_PATH">{{ t('nav.groups') }}</RouterLink>
       <RouterLink class="app-header__nav-link" :to="MY_LOANS_ROUTE_PATH">{{ t('nav.loans') }}</RouterLink>
+      <RouterLink class="app-header__notification-link" :to="NOTIFICATIONS_ROUTE_PATH" :aria-label="t('nav.notifications')" :title="t('nav.notifications')">
+        <svg class="app-header__notification-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Z"></path>
+          <path d="M19 17h-1V11a6 6 0 0 0-4.5-5.8V4a1.5 1.5 0 0 0-3 0v1.2A6 6 0 0 0 6 11v6H5a1 1 0 1 0 0 2h14a1 1 0 1 0 0-2Zm-3 0H8V11a4 4 0 0 1 8 0v6Z"></path>
+        </svg>
+        <span v-if="unreadNotificationsCount" class="app-header__notification-count">{{ unreadNotificationsCount }}</span>
+      </RouterLink>
 
       <div class="app-header__controls" aria-label="Display preferences">
         <button class="app-header__control-button" type="button" :aria-label="t('nav.switchLanguage')" @click="toggleLocale">

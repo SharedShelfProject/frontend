@@ -5,6 +5,7 @@ import BaseError from '@/shared/components/BaseError/BaseError.vue';
 import { MY_BOOKS_ROUTE_PATH } from '@/constants/routes.constants';
 import { currentLocale, t } from '@/services/localization.service';
 import { useBookDetailView } from '../../composables/useBookDetailView';
+import { formatBookLanguage } from '../../services/book-language.service';
 import { getBookCoverUrl } from '../../services/book-cover.service';
 import './BookDetailView.css';
 
@@ -15,7 +16,7 @@ const { book, reviews, isLoading, errorMessage, fetchBookPage } = useBookDetailV
 const reviewCountLabel = computed(() => {
   const count = reviews.value.length;
 
-  return `${count} ${count === 1 ? 'review' : 'reviews'}`;
+  return `${count} ${count === 1 ? t('bookDetail.reviewOne') : t('bookDetail.reviewMany')}`;
 });
 
 onMounted(fetchBookPage);
@@ -36,23 +37,23 @@ function formatDate(value: string) {
 <template>
   <main class="book-detail-view">
     <section class="book-detail-view__shell">
-      <RouterLink class="book-detail-view__back-link" :to="MY_BOOKS_ROUTE_PATH">Back to my books</RouterLink>
+      <RouterLink class="book-detail-view__back-link" :to="MY_BOOKS_ROUTE_PATH">{{ t('bookDetail.back') }}</RouterLink>
 
       <div v-if="isLoading" class="book-detail-view__loading" aria-live="polite">
         <span class="book-detail-view__spinner" aria-hidden="true"></span>
-        <span>Loading book...</span>
+        <span>{{ t('bookDetail.loading') }}</span>
       </div>
 
       <template v-else-if="book">
         <BaseError :message="errorMessage" />
 
-        <section class="book-detail-view__hero" aria-label="Book details">
+        <section class="book-detail-view__hero" :aria-label="t('bookDetail.details')">
           <div class="book-detail-view__cover" aria-hidden="true">
             <img v-if="getBookCoverUrl(book)" :src="getBookCoverUrl(book)" alt="" />
             <span v-else>{{ book.title.at(0)?.toUpperCase() }}</span>
           </div>
           <div>
-            <p class="book-detail-view__eyebrow">Book details</p>
+            <p class="book-detail-view__eyebrow">{{ t('bookDetail.details') }}</p>
             <h1 class="book-detail-view__title">{{ book.title }}</h1>
             <p class="book-detail-view__author">{{ book.author }}</p>
           </div>
@@ -62,30 +63,30 @@ function formatDate(value: string) {
         </section>
 
         <section class="book-detail-view__layout">
-          <section class="book-detail-view__panel" aria-label="About book">
-            <h2>About</h2>
+          <section class="book-detail-view__panel" :aria-label="t('bookDetail.aboutLabel')">
+            <h2>{{ t('bookDetail.about') }}</h2>
             <p v-if="book.description" class="book-detail-view__description">{{ book.description }}</p>
-            <p v-else class="book-detail-view__description">No description yet.</p>
+            <p v-else class="book-detail-view__description">{{ t('bookDetail.noDescription') }}</p>
 
             <dl class="book-detail-view__meta">
               <div v-if="book.ownerUsername">
-                <dt>Owner</dt>
+                <dt>{{ t('bookDetail.owner') }}</dt>
                 <dd>{{ book.ownerUsername }}</dd>
               </div>
               <div v-if="book.genre">
-                <dt>Genre</dt>
+                <dt>{{ t('books.genre') }}</dt>
                 <dd>{{ book.genre }}</dd>
               </div>
               <div v-if="book.language">
-                <dt>Language</dt>
-                <dd>{{ book.language }}</dd>
+                <dt>{{ t('books.language') }}</dt>
+                <dd>{{ formatBookLanguage(book.language) }}</dd>
               </div>
               <div v-if="book.publicationYear">
-                <dt>Year</dt>
+                <dt>{{ t('books.year') }}</dt>
                 <dd>{{ book.publicationYear }}</dd>
               </div>
               <div v-if="book.condition">
-                <dt>Condition</dt>
+                <dt>{{ t('books.condition') }}</dt>
                 <dd>{{ book.condition }}</dd>
               </div>
               <div v-if="book.isbn">
@@ -93,15 +94,15 @@ function formatDate(value: string) {
                 <dd>{{ book.isbn }}</dd>
               </div>
               <div>
-                <dt>Added</dt>
+                <dt>{{ t('books.added') }}</dt>
                 <dd>{{ formatDate(book.createdAt) }}</dd>
               </div>
             </dl>
           </section>
 
-          <section class="book-detail-view__panel" aria-label="Book reviews">
+          <section class="book-detail-view__panel" :aria-label="t('bookDetail.reviewsLabel')">
             <div class="book-detail-view__reviews-header">
-              <h2>Reviews</h2>
+              <h2>{{ t('bookDetail.reviews') }}</h2>
               <span>{{ reviewCountLabel }}</span>
             </div>
 
@@ -121,16 +122,16 @@ function formatDate(value: string) {
             </div>
 
             <div v-else class="book-detail-view__empty" role="status">
-              <h3>No reviews yet</h3>
-              <p>Reviews appear after completed loans.</p>
+              <h3>{{ t('bookDetail.noReviews') }}</h3>
+              <p>{{ t('bookDetail.noReviewsText') }}</p>
             </div>
           </section>
         </section>
       </template>
 
       <div v-else class="book-detail-view__empty" role="status">
-        <h2>Book is unavailable</h2>
-        <p>We could not load this book right now.</p>
+        <h2>{{ t('bookDetail.unavailableTitle') }}</h2>
+        <p>{{ t('bookDetail.unavailableText') }}</p>
       </div>
     </section>
   </main>

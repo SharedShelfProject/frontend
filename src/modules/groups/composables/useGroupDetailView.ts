@@ -3,6 +3,7 @@ import { booksRepository } from '@/modules/books/repositories/books.repository';
 import { Book } from '@/modules/books/interfaces/book.interface';
 import { UserProfile } from '@/modules/profile/interfaces/user-profile.interface';
 import { usersRepository } from '@/modules/profile/repositories/users.repository';
+import { t } from '@/services/localization.service';
 import { BookReview } from '../interfaces/book-review.interface';
 import { BorrowRequest } from '../interfaces/borrow-request.interface';
 import { CatalogEntry } from '../interfaces/catalog-entry.interface';
@@ -161,7 +162,7 @@ export function useGroupDetailView(groupId: string) {
     try {
       await Promise.all([fetchGroup(), fetchCatalog(), fetchMyBooks(), fetchMembers(), fetchCurrentUser()]);
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not load group.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.loadError'));
     } finally {
       isLoading.value = false;
     }
@@ -179,10 +180,10 @@ export function useGroupDetailView(groupId: string) {
     try {
       await groupCatalogRepository.addBook(groupId, selectedBookId.value);
       selectedBookId.value = '';
-      setStatus('Book added to group catalog.');
+      setStatus(t('groupDetail.bookAdded'));
       await Promise.all([fetchCatalog(), fetchMyBooks()]);
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not add book to catalog.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.addBookError'));
     } finally {
       isAddingBook.value = false;
     }
@@ -199,10 +200,10 @@ export function useGroupDetailView(groupId: string) {
         ...requestMessages.value,
         [entry.id]: '',
       };
-      setStatus('Borrow request created.');
+      setStatus(t('groupDetail.borrowRequestCreated'));
       await fetchRequestQueues();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not create borrow request.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.borrowRequestCreateError'));
     } finally {
       requestingEntryId.value = null;
     }
@@ -212,7 +213,7 @@ export function useGroupDetailView(groupId: string) {
     const form = approvalForms.value[request.id];
 
     if (!form?.dueAt) {
-      errorMessage.value = 'Choose a due date before approving.';
+      errorMessage.value = t('groupDetail.chooseDueDate');
       return;
     }
 
@@ -234,10 +235,10 @@ export function useGroupDetailView(groupId: string) {
         };
       }
 
-      setStatus(response.loan ? 'Borrow request approved and loan created.' : 'Borrow request approved.');
+      setStatus(response.loan ? t('groupDetail.borrowRequestApprovedWithLoan') : t('groupDetail.borrowRequestApproved'));
       await fetchCatalog();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not approve request.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.borrowRequestApproveError'));
     } finally {
       updatingRequestId.value = null;
     }
@@ -250,10 +251,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await borrowRequestsRepository.reject(request.id);
-      setStatus('Borrow request rejected.');
+      setStatus(t('groupDetail.borrowRequestRejected'));
       await fetchCatalog();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not reject request.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.borrowRequestRejectError'));
     } finally {
       updatingRequestId.value = null;
     }
@@ -266,10 +267,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await borrowRequestsRepository.cancel(request.id);
-      setStatus('Borrow request cancelled.');
+      setStatus(t('groupDetail.borrowRequestCancelled'));
       await fetchCatalog();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not cancel request.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.borrowRequestCancelError'));
     } finally {
       updatingRequestId.value = null;
     }
@@ -306,10 +307,10 @@ export function useGroupDetailView(groupId: string) {
         ...returnForms.value,
         [loan.id]: '',
       };
-      setStatus(response.nextLoan ? 'Loan returned. Next approved request became active.' : 'Loan returned.');
+      setStatus(response.nextLoan ? t('groupDetail.loanReturnedNextActive') : t('groupDetail.loanReturned'));
       await fetchCatalog();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not return loan.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.returnLoanError'));
     } finally {
       returningLoanId.value = null;
     }
@@ -320,7 +321,7 @@ export function useGroupDetailView(groupId: string) {
     const rating = Number(form?.rating);
 
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      errorMessage.value = 'Choose a rating from 1 to 5.';
+      errorMessage.value = t('groupDetail.ratingError');
       return;
     }
 
@@ -337,10 +338,10 @@ export function useGroupDetailView(groupId: string) {
           comment: '',
         },
       };
-      setStatus('Review published.');
+      setStatus(t('groupDetail.reviewPublished'));
       await fetchBookReviews();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not publish review.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.reviewError'));
     } finally {
       reviewingLoanId.value = null;
     }
@@ -353,10 +354,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await groupCatalogRepository.updateVisibility(groupId, entry.id, !entry.isVisible);
-      setStatus(entry.isVisible ? 'Catalog entry hidden.' : 'Catalog entry visible again.');
+      setStatus(entry.isVisible ? t('groupDetail.catalogEntryHidden') : t('groupDetail.catalogEntryVisible'));
       await fetchCatalog();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not update catalog entry.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.catalogEntryUpdateError'));
     } finally {
       updatingEntryId.value = null;
     }
@@ -369,10 +370,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await groupCatalogRepository.deleteEntry(groupId, entry.id);
-      setStatus('Book removed from group catalog.');
+      setStatus(t('groupDetail.bookRemoved'));
       await fetchCatalog();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not remove catalog entry.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.removeBookError'));
     } finally {
       updatingEntryId.value = null;
     }
@@ -385,10 +386,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await groupMembersRepository.updateRole(groupId, member.userId, role);
-      setStatus(`${member.username}'s role was updated.`);
+      setStatus(t('groupDetail.memberRoleUpdated').replace('{username}', member.username));
       await fetchMembers();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not update member role.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.memberRoleUpdateError'));
     } finally {
       updatingMemberId.value = null;
     }
@@ -401,10 +402,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await groupMembersRepository.remove(groupId, member.userId);
-      setStatus(`${member.username} was removed from the group.`);
+      setStatus(t('groupDetail.memberRemoved').replace('{username}', member.username));
       await fetchMembers();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not remove member.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.memberRemoveError'));
     } finally {
       updatingMemberId.value = null;
     }
@@ -417,10 +418,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await groupMembersRepository.block(groupId, member.userId);
-      setStatus(`${member.username} was blocked.`);
+      setStatus(t('groupDetail.memberBlocked').replace('{username}', member.username));
       await fetchMembers();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not block member.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.memberBlockError'));
     } finally {
       updatingMemberId.value = null;
     }
@@ -433,10 +434,10 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       await groupMembersRepository.unblock(groupId, member.userId);
-      setStatus(`${member.username} was unblocked.`);
+      setStatus(t('groupDetail.memberUnblocked').replace('{username}', member.username));
       await fetchMembers();
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not unblock member.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.memberUnblockError'));
     } finally {
       updatingMemberId.value = null;
     }
@@ -449,9 +450,9 @@ export function useGroupDetailView(groupId: string) {
 
     try {
       members.value = await groupMembersRepository.transferOwnership(groupId, newOwnerId);
-      setStatus('Ownership was transferred.');
+      setStatus(t('groupDetail.ownershipTransferred'));
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not transfer ownership.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.transferOwnershipError'));
     } finally {
       updatingMemberId.value = null;
     }
@@ -477,7 +478,7 @@ export function useGroupDetailView(groupId: string) {
 
       await groupsRepository.leave(groupId);
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not leave group.');
+      errorMessage.value = getErrorMessage(error, t('groupDetail.leaveError'));
       isLeaving.value = false;
       throw error;
     }

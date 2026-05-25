@@ -4,9 +4,10 @@ import BaseButton from '@/shared/components/BaseButton/BaseButton.vue';
 import BaseError from '@/shared/components/BaseError/BaseError.vue';
 import { RouteName } from '@/enums/route-name.enum';
 import { BaseButtonVariant } from '@/shared/enums/base-button-variant.enum';
-import { t } from '@/services/localization.service';
+import { currentLocale, t } from '@/services/localization.service';
 import { Book } from '../../interfaces/book.interface';
 import { useMyBooksView } from '../../composables/useMyBooksView';
+import { formatBookLanguage } from '../../services/book-language.service';
 import { getBookCoverUrl } from '../../services/book-cover.service';
 import './MyBooksView.css';
 
@@ -28,7 +29,7 @@ const viewMode = ref<'grid' | 'list'>('grid');
 const bookCountLabel = computed(() => {
   const count = books.value.length;
 
-  return `${count} ${count === 1 ? 'book' : 'books'}`;
+  return formatBookCount(count);
 });
 
 const filteredBooks = computed(() => {
@@ -62,7 +63,7 @@ const sharedReadyCount = computed(() => books.value.filter((book) => book.status
 onMounted(fetchBooks);
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(currentLocale.value === 'uk' ? 'uk-UA' : 'en', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -70,11 +71,27 @@ function formatDate(value: string) {
 }
 
 function formatStatus(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return t(`status.${status}` as Parameters<typeof t>[0]);
+}
+
+function formatBookCount(count: number) {
+  if (currentLocale.value !== 'uk') {
+    return `${count} ${count === 1 ? t('books.countOne') : t('books.countMany')}`;
+  }
+
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+  const label = lastDigit === 1 && lastTwoDigits !== 11
+    ? t('books.countOne')
+    : lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)
+      ? t('books.countFew')
+      : t('books.countMany');
+
+  return `${count} ${label}`;
 }
 
 function handleDelete(book: Book) {
-  if (window.confirm(`Remove "${book.title}" from your collection?`)) {
+  if (window.confirm(t('books.confirmDelete').replace('{title}', book.title))) {
     void deleteBook(book);
   }
 }
@@ -98,7 +115,7 @@ function handleDelete(book: Book) {
       <BaseError :message="errorMessage" />
       <p v-if="statusMessage" class="my-books-view__success" role="status">{{ statusMessage }}</p>
 
-      <section class="my-books-view__insights" aria-label="Library summary">
+      <section class="my-books-view__insights" :aria-label="t('books.summaryLabel')">
         <article>
           <span>{{ t('books.total') }}</span>
           <strong>{{ books.length }}</strong>
@@ -113,7 +130,7 @@ function handleDelete(book: Book) {
         </article>
       </section>
 
-      <section class="my-books-view__toolbar" aria-label="Library controls">
+      <section class="my-books-view__toolbar" :aria-label="t('books.controlsLabel')">
         <label class="my-books-view__search">
           <span>{{ t('books.search') }}</span>
           <input v-model="searchQuery" :placeholder="t('books.searchPlaceholder')" type="search" />
@@ -122,10 +139,10 @@ function handleDelete(book: Book) {
           <span>{{ t('books.status') }}</span>
           <select v-model="statusFilter">
             <option value="all">{{ t('books.all') }}</option>
-            <option value="available">Available</option>
-            <option value="queued">Queued</option>
-            <option value="borrowed">Borrowed</option>
-            <option value="unavailable">Unavailable</option>
+            <option value="available">{{ t('status.available') }}</option>
+            <option value="queued">{{ t('status.queued') }}</option>
+            <option value="borrowed">{{ t('status.borrowed') }}</option>
+            <option value="unavailable">{{ t('status.unavailable') }}</option>
           </select>
         </label>
         <label>
@@ -136,13 +153,13 @@ function handleDelete(book: Book) {
             <option value="author">{{ t('books.authorSort') }}</option>
           </select>
         </label>
-        <div class="my-books-view__toggle" aria-label="View mode">
+        <div class="my-books-view__toggle" :aria-label="t('books.viewModeLabel')">
           <button :class="{ 'is-active': viewMode === 'grid' }" type="button" @click="viewMode = 'grid'">{{ t('books.grid') }}</button>
           <button :class="{ 'is-active': viewMode === 'list' }" type="button" @click="viewMode = 'list'">{{ t('books.list') }}</button>
         </div>
       </section>
 
-      <section class="my-books-view__list-section" aria-label="Your books">
+      <section class="my-books-view__list-section" :aria-label="t('books.listLabel')">
         <div v-if="isLoading" class="my-books-view__loading" aria-live="polite">
           <span class="my-books-view__spinner" aria-hidden="true"></span>
           <span>{{ t('books.loading') }}</span>
@@ -194,7 +211,7 @@ function handleDelete(book: Book) {
               </div>
               <div v-if="book.language">
                 <dt>{{ t('books.language') }}</dt>
-                <dd>{{ book.language }}</dd>
+                <dd>{{ formatBookLanguage(book.language) }}</dd>
               </div>
               <div v-if="book.publicationYear">
                 <dt>{{ t('books.year') }}</dt>

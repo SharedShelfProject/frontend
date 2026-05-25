@@ -10,4 +10,5 @@ export enum RouteName {
   Groups = 'groups',
   GroupDetail = 'group-detail',
   MyLoans = 'my-loans',
+  Notifications = 'notifications',
 }

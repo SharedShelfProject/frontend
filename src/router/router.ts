@@ -10,6 +10,7 @@ import {
   MY_LOANS_ROUTE_PATH,
   MY_BOOKS_ROUTE_PATH,
   NEW_BOOK_ROUTE_PATH,
+  NOTIFICATIONS_ROUTE_PATH,
   PROFILE_ROUTE_PATH,
   REGISTER_ROUTE_PATH,
   ROOT_ROUTE_PATH,
@@ -27,6 +28,7 @@ import BookEditorView from '@/modules/books/views/BookEditorView/BookEditorView.
 import GroupsView from '@/modules/groups/views/GroupsView/GroupsView.vue';
 import GroupDetailView from '@/modules/groups/views/GroupDetailView/GroupDetailView.vue';
 import MyLoansView from '@/modules/loans/views/MyLoansView/MyLoansView.vue';
+import NotificationsView from '@/modules/notifications/views/NotificationsView/NotificationsView.vue';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -119,6 +121,14 @@ export const router = createRouter({
       path: MY_LOANS_ROUTE_PATH,
       name: RouteName.MyLoans,
       component: MyLoansView,
+      meta: {
+        requiresAuthorization: true,
+      },
+    },
+    {
+      path: NOTIFICATIONS_ROUTE_PATH,
+      name: RouteName.Notifications,
+      component: NotificationsView,
       meta: {
         requiresAuthorization: true,
       },

@@ -12,6 +12,7 @@ import { t } from '@/services/localization.service';
 import { BOOK_LANGUAGE_OPTIONS } from '../../constants/book-languages.constants';
 import { BookFormState } from '../../interfaces/book-form-state.interface';
 import { booksRepository } from '../../repositories/books.repository';
+import { formatBookLanguage } from '../../services/book-language.service';
 import { getBookCoverUrl, readFileAsDataUrl, saveBookCover } from '../../services/book-cover.service';
 import './BookEditorView.css';
 
@@ -171,7 +172,7 @@ onMounted(fetchBook);
           <h1>{{ isEditing ? t('editor.editTitle') : t('editor.newTitle') }}</h1>
           <p>{{ t('editor.description') }}</p>
         </div>
-        <div class="book-editor-view__progress" aria-label="Form completion">
+        <div class="book-editor-view__progress" :aria-label="t('editor.formCompletionLabel')">
           <strong>{{ completion }}%</strong>
           <span>{{ t('editor.complete') }}</span>
         </div>
@@ -180,7 +181,7 @@ onMounted(fetchBook);
       <BaseError :message="errorMessage" />
       <p v-if="statusMessage" class="book-editor-view__success" role="status">{{ statusMessage }}</p>
 
-      <div v-if="isLoading" class="book-editor-view__loading" aria-live="polite">Loading book...</div>
+      <div v-if="isLoading" class="book-editor-view__loading" aria-live="polite">{{ t('editor.loading') }}</div>
 
       <form v-else class="book-editor-view__form" novalidate @submit.prevent="saveBook">
         <section class="book-editor-view__section">
@@ -199,8 +200,8 @@ onMounted(fetchBook);
             </label>
 
             <div class="book-editor-view__grid">
-              <BaseInput v-model="form.title" autocomplete="off" :label="t('editor.titleLabel')" name="title" placeholder="Book title" />
-              <BaseInput v-model="form.author" autocomplete="off" :label="t('editor.authorLabel')" name="author" placeholder="Author name" />
+              <BaseInput v-model="form.title" autocomplete="off" :label="t('editor.titleLabel')" name="title" :placeholder="t('editor.titlePlaceholder')" />
+              <BaseInput v-model="form.author" autocomplete="off" :label="t('editor.authorLabel')" name="author" :placeholder="t('editor.authorPlaceholder')" />
             </div>
           </div>
         </section>
@@ -212,18 +213,18 @@ onMounted(fetchBook);
             <p>{{ t('editor.detailsText') }}</p>
           </div>
           <div class="book-editor-view__grid book-editor-view__grid--details">
-            <BaseInput v-model="form.genre" autocomplete="off" :label="t('books.genre')" name="genre" placeholder="Literary fiction" />
+            <BaseInput v-model="form.genre" autocomplete="off" :label="t('books.genre')" name="genre" :placeholder="t('editor.genrePlaceholder')" />
             <label class="book-editor-view__field">
               <span>{{ t('books.language') }}</span>
               <select v-model="form.language" name="language">
                 <option value="">{{ t('editor.notSpecified') }}</option>
                 <option v-for="language in BOOK_LANGUAGE_OPTIONS" :key="language" :value="language">
-                  {{ language }}
+                  {{ formatBookLanguage(language) }}
                 </option>
               </select>
             </label>
             <BaseInput v-model="form.isbn" autocomplete="off" :label="t('editor.isbn')" name="isbn" placeholder="978..." />
-            <BaseInput v-model="form.publicationYear" autocomplete="off" :label="t('books.year')" name="publicationYear" type="number" placeholder="2024" />
+            <BaseInput v-model="form.publicationYear" autocomplete="off" :label="t('books.year')" name="publicationYear" type="number" :placeholder="t('editor.yearPlaceholder')" />
           </div>
         </section>
 
@@ -236,13 +237,13 @@ onMounted(fetchBook);
           <div class="book-editor-view__grid book-editor-view__grid--details">
             <label class="book-editor-view__field">
               <span>{{ t('books.condition') }}</span>
-              <input v-model="form.condition" name="condition" placeholder="Good, hardcover, annotated..." />
+              <input v-model="form.condition" name="condition" :placeholder="t('editor.conditionPlaceholder')" />
             </label>
             <label v-if="isEditing" class="book-editor-view__field">
               <span>{{ t('books.status') }}</span>
               <select v-model="form.status" name="status">
-                <option value="available">Available</option>
-                <option value="unavailable">Unavailable</option>
+                <option value="available">{{ t('status.available') }}</option>
+                <option value="unavailable">{{ t('status.unavailable') }}</option>
               </select>
             </label>
           </div>
@@ -256,7 +257,7 @@ onMounted(fetchBook);
           </div>
           <label class="book-editor-view__field">
             <span>{{ t('editor.descriptionLabel') }}</span>
-            <textarea v-model="form.description" name="description" rows="5" placeholder="Why this copy is worth borrowing, edition notes, or exchange preferences."></textarea>
+            <textarea v-model="form.description" name="description" rows="5" :placeholder="t('editor.descriptionPlaceholder')"></textarea>
           </label>
         </section>
 
